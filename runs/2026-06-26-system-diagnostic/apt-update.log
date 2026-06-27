@@ -1,0 +1,18 @@
+Get:1 https://cli.github.com/packages stable InRelease [3917 B]
+Ign:2 http://packages.linuxmint.com zena InRelease
+Hit:3 http://packages.linuxmint.com zena Release
+Hit:4 https://download.docker.com/linux/ubuntu noble InRelease
+Hit:6 https://apt.releases.hashicorp.com noble InRelease
+Hit:7 http://archive.ubuntu.com/ubuntu noble InRelease
+Hit:8 https://packages.microsoft.com/repos/code stable InRelease
+Hit:9 https://dl.google.com/linux/chrome/deb stable InRelease
+Hit:10 http://security.ubuntu.com/ubuntu noble-security InRelease
+Hit:11 http://archive.ubuntu.com/ubuntu noble-updates InRelease
+Get:12 https://pkgs.tailscale.com/stable/ubuntu noble InRelease
+Hit:13 https://dl.google.com/linux/chrome-stable/deb stable InRelease
+Hit:14 https://downloads.1password.com/linux/debian/amd64 stable InRelease
+Hit:15 http://archive.ubuntu.com/ubuntu noble-backports InRelease
+Hit:16 https://us-central1-apt.pkg.dev/projects/antigravity-auto-updater-dev antigravity-debian InRelease
+Hit:17 http://deb.gierens.de stable InRelease
+Fetched 10.5 kB in 1s (8779 B/s)
+Reading package lists...

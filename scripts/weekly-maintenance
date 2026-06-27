@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+LOG_DIR="${AI_HARNESS_HOME:-/home/dima/AI-Harness}/runs/system-maintenance"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/weekly-$(date +%Y%m%d-%H%M%S).log"
+
+{
+  echo "Started: $(date -Is)"
+  echo
+  echo "## Docker before"
+  docker system df || true
+  echo
+  echo "## Docker builder prune older than 7 days"
+  docker builder prune -af --filter until=168h || true
+  echo
+  echo "## Docker image prune older than 30 days"
+  docker image prune -af --filter until=720h || true
+  echo
+  echo "## Stopped container prune older than 7 days"
+  docker container prune -f --filter until=168h || true
+  echo
+  echo "## Package caches"
+  apt-get clean || true
+  journalctl --vacuum-size=500M || true
+  echo
+  echo "## Docker after"
+  docker system df || true
+  echo
+  echo "Finished: $(date -Is)"
+} >>"$LOG_FILE" 2>&1
+
+echo "$LOG_FILE"

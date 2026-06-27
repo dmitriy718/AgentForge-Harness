@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+LOG_DIR="${AI_HARNESS_HOME:-/home/dima/AI-Harness}/runs/system-health"
+mkdir -p "$LOG_DIR"
+OUT="$LOG_DIR/monthly-$(date +%Y%m%d-%H%M%S).txt"
+
+{
+  echo "Started: $(date -Is)"
+  echo
+  echo "## OS"
+  uname -a
+  lsb_release -a 2>/dev/null || cat /etc/os-release
+  uptime
+  echo
+  echo "## Memory"
+  free -h
+  swapon --show
+  echo
+  echo "## Filesystems"
+  df -hT
+  df -ih
+  echo
+  echo "## Failed units"
+  systemctl --failed --no-pager
+  echo
+  echo "## NVMe SMART"
+  smartctl -a /dev/nvme0n1 || true
+  echo
+  echo "## NVMe log"
+  nvme smart-log /dev/nvme0n1 || true
+  echo
+  echo "## Sensors"
+  sensors || true
+  echo
+  echo "## Docker"
+  docker system df || true
+  docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}' || true
+  echo
+  echo "Finished: $(date -Is)"
+} >"$OUT" 2>&1
+
+echo "$OUT"

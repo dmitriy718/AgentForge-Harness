@@ -1,0 +1,7 @@
+created=2026-06-26T20:48:49
+mode=implementation
+target=codex
+risk=high
+workspace=/home/dima/AI-Harness
+execution=codex exec
+final_output=/home/dima/AI-Harness/runs/2026-06-26-fix-well-i-am-still-waiting-for-you-to-make-this-harness-worth-while-s/codex-final.md

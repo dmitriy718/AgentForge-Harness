@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MODEL="${1:-}"
+if [ -z "$MODEL" ]; then
+  echo "Usage: run-local-model-eval <ollama-model>" >&2
+  exit 2
+fi
+
+ROOT="${AI_HARNESS_HOME:-/home/dima/AI-Harness}"
+PROMPTS="$ROOT/evals/local-model-benchmark"
+OUT_ROOT="/home/dima/models/evals/$(date +%Y%m%d-%H%M%S)-${MODEL//[:\\/]/-}"
+mkdir -p "$OUT_ROOT"
+
+{
+  echo "model=$MODEL"
+  echo "started=$(date -Is)"
+  echo "prompt_dir=$PROMPTS"
+} > "$OUT_ROOT/metadata.txt"
+
+for prompt in "$PROMPTS"/E*.md; do
+  name="$(basename "$prompt" .md)"
+  out="$OUT_ROOT/$name.out.md"
+  metrics="$OUT_ROOT/$name.time.txt"
+  echo "Running $name"
+  /usr/bin/time -v ollama run "$MODEL" "$(cat "$prompt")" > "$out" 2> "$metrics"
+done
+
+echo "finished=$(date -Is)" >> "$OUT_ROOT/metadata.txt"
+echo "$OUT_ROOT"

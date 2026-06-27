@@ -1,0 +1,7 @@
+Running E1-coding-repair
+Running E2-system-diagnostic
+Running E3-long-context-summary
+Running E4-structured-extraction
+Running E5-safety-privacy
+Running E6-adversarial-assumption
+/home/dima/models/evals/20260626-201216-qwen2.5-coder:1.5b

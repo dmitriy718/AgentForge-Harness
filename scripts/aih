@@ -1,0 +1,926 @@
+#!/usr/bin/env python3
+"""Simple overlay CLI for the Dmitriy AI Harness."""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+
+DEFAULT_ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(os.environ.get("AI_HARNESS_HOME", DEFAULT_ROOT)).expanduser().resolve()
+SEARCH_DIRS = ["templates", "playbooks", "checklists", "swarm", "protocols", "rubrics", "packs"]
+CORE_FILES = [
+    "INDEX.md",
+    "HOW_TO_USE.md",
+    "VERSION.md",
+    "scripts/aih",
+    "templates/00-universal-task-brief.md",
+    "templates/01-codex-implementation.md",
+    "templates/03-debug-diagnostic.md",
+    "templates/04-code-review.md",
+    "templates/07-agent-handoff.md",
+    "protocols/production-readiness.md",
+    "checklists/validation-gate.md",
+]
+CORE_DIRS = ["templates", "playbooks", "checklists", "swarm", "protocols", "rubrics", "packs", "runs"]
+RELEASE_GATES = [
+    "clear target user and use case",
+    "repeatable input format",
+    "explicit output contract",
+    "validation method",
+    "failure handling",
+    "safety/privacy boundary",
+    "versioned release notes",
+    "example run",
+    "handoff or support note",
+]
+SENSITIVE_REQUEST_PATTERNS = (
+    re.compile(r"(?i)\b(sk-[A-Za-z0-9_-]{12,})"),
+    re.compile(r"(?i)\b(api[_-]?key|token|password|secret)\s*[:=]\s*\S+"),
+)
+
+MODES = {
+    "implementation": {
+        "title": "Implementation",
+        "route": "Codex or another coding agent with filesystem and terminal access.",
+        "keywords": (
+            "aih",
+            "build",
+            "change",
+            "code",
+            "edit",
+            "feature",
+            "fix",
+            "harness",
+            "implement",
+            "patch",
+            "refactor",
+            "repo",
+            "script",
+            "test",
+            "tool",
+        ),
+    },
+    "debug": {
+        "title": "Debugging",
+        "route": "Codex for local inspection, logs, commands, and targeted fixes.",
+        "keywords": (
+            "broken",
+            "bug",
+            "crash",
+            "debug",
+            "diagnose",
+            "error",
+            "fail",
+            "fails",
+            "issue",
+            "log",
+            "trace",
+        ),
+    },
+    "review": {
+        "title": "Review",
+        "route": "A strong reasoning model or Codex when repository context is needed.",
+        "keywords": ("audit", "check", "pr", "review", "risk", "vulnerability"),
+    },
+    "research": {
+        "title": "Research",
+        "route": "A web-capable model, with primary sources required for unstable facts.",
+        "keywords": (
+            "compare",
+            "current",
+            "docs",
+            "find",
+            "latest",
+            "look up",
+            "research",
+            "source",
+            "verify",
+        ),
+    },
+    "architecture": {
+        "title": "Architecture",
+        "route": "A strong reasoning model, optionally followed by Codex for implementation.",
+        "keywords": ("architecture", "choose", "design", "migrate", "plan", "scale", "tradeoff"),
+    },
+    "security": {
+        "title": "Security",
+        "route": "A strong reasoning model plus a red-team review pass.",
+        "keywords": ("auth", "credential", "exploit", "permission", "privacy", "secret", "security", "threat"),
+    },
+    "extraction": {
+        "title": "Data Extraction",
+        "route": "A structured-output model or local script, with schema validation.",
+        "keywords": ("csv", "data", "extract", "json", "parse", "spreadsheet", "table"),
+    },
+    "eval": {
+        "title": "Model Evaluation",
+        "route": "Repeatable local or hosted model runs scored with the same rubric.",
+        "keywords": ("benchmark", "eval", "evaluate", "model", "ollama", "prompt test", "score"),
+    },
+}
+
+
+@dataclass(frozen=True)
+class Overlay:
+    request: str
+    mode: str
+    target: str
+    cwd: Path
+    risk: str
+
+
+@dataclass(frozen=True)
+class Check:
+    name: str
+    ok: bool
+    detail: str
+    required: bool = True
+
+    @property
+    def status(self) -> str:
+        if self.ok:
+            return "OK"
+        return "FAIL" if self.required else "WARN"
+
+
+def utc_now() -> dt.datetime:
+    return dt.datetime.now(dt.timezone.utc)
+
+
+def read_version() -> str:
+    version_file = ROOT / "VERSION.md"
+    if not version_file.exists():
+        return "unknown"
+    text = version_file.read_text()
+    current = re.search(r"Current version:\s*`?([^`\n]+)`?", text)
+    if current:
+        return current.group(1).strip()
+    for line in text.splitlines():
+        value = line.strip()
+        if value and value.startswith("## "):
+            return value.removeprefix("## ").strip()
+    return "unknown"
+
+
+def files() -> list[Path]:
+    found: list[Path] = []
+    for name in SEARCH_DIRS:
+        directory = ROOT / name
+        if directory.exists():
+            found.extend(sorted(directory.glob("*.md")))
+    return sorted(found)
+
+
+def match_file(query: str) -> Path:
+    query_lower = query.lower()
+    matches = [p for p in files() if query_lower in p.name.lower() or query_lower in p.stem.lower()]
+    if not matches:
+        raise SystemExit(f"No harness file matched: {query}")
+    return matches[0]
+
+
+def slugify(value: str) -> str:
+    slug = re.sub(r"[^a-zA-Z0-9]+", "-", value.strip().lower()).strip("-")
+    return slug[:70] or "task"
+
+
+def redact_request(value: str) -> str:
+    redacted = value
+    for pattern in SENSITIVE_REQUEST_PATTERNS:
+        redacted = pattern.sub("[REDACTED]", redacted)
+    return redacted
+
+
+def read_request(args: argparse.Namespace) -> str:
+    parts = list(getattr(args, "request", []) or [])
+    request = " ".join(parts).strip()
+
+    if getattr(args, "file", None):
+        request = Path(args.file).expanduser().read_text().strip()
+
+    if not request and not sys.stdin.isatty():
+        request = sys.stdin.read().strip()
+
+    if not request:
+        raise SystemExit("Give me a request, or pass --file. Example: aih fix the login bug")
+
+    return request
+
+
+def classify_mode(request: str, requested_mode: str = "auto") -> str:
+    if requested_mode != "auto":
+        if requested_mode not in MODES:
+            raise SystemExit(f"Unknown mode: {requested_mode}")
+        return requested_mode
+
+    text = request.lower()
+    scores: dict[str, int] = {}
+    for mode, spec in MODES.items():
+        score = 0
+        for keyword in spec["keywords"]:
+            if keyword in text:
+                score += 2 if " " in keyword else 1
+        scores[mode] = score
+
+    best_mode, best_score = max(scores.items(), key=lambda item: item[1])
+    return best_mode if best_score else "implementation"
+
+
+def infer_risk(request: str) -> str:
+    text = request.lower()
+    high_risk = (
+        "production",
+        "prod",
+        "payment",
+        "delete",
+        "database",
+        "secret",
+        "credential",
+        "security",
+        "auth",
+        "customer",
+        "medical",
+        "legal",
+        "financial",
+    )
+    medium_risk = ("deploy", "migration", "refactor", "install", "upgrade", "permission", "api")
+    if any(term in text for term in high_risk):
+        return "high"
+    if any(term in text for term in medium_risk):
+        return "medium"
+    return "normal"
+
+
+def choose_target(request: str, target: str, mode: str) -> str:
+    if target != "auto":
+        return target
+    text = request.lower()
+
+    if mode in {"implementation", "debug"}:
+        return "codex"
+
+    if any(term in text for term in ("aih", "repo", "code", "file", "terminal", "test", "codex", "patch", "script", "harness")):
+        return "codex"
+    if any(term in text for term in ("write", "brainstorm", "summarize", "claude", "draft")):
+        return "claude"
+    return "generic"
+
+
+def overlay_clauses(mode: str, target: str, risk: str) -> list[str]:
+    clauses = [
+        "Restate the objective in one sentence before acting.",
+        "Treat the request as an outcome to deliver, not a topic to discuss.",
+        "Do not stop at a plan when the user asked you to fix, build, change, debug, or review something and you have the tools to act.",
+        "Separate facts, assumptions, unknowns, and inferences.",
+        "Use available evidence first. Do not invent missing context.",
+        "When context is missing, make the smallest safe assumption and say how to verify it.",
+        "Prefer direct inspection, tests, primary sources, and reproducible commands over plausible explanations.",
+        "Before finalizing, run or specify validation that could falsify the answer.",
+        "If blocked, state the blocker, the exact missing input, and the smallest useful next step.",
+    ]
+
+    if target == "codex":
+        clauses.extend(
+            [
+                "Inspect the local workspace before editing.",
+                "Preserve unrelated user changes.",
+                "Keep edits scoped to the requested behavior.",
+                "Report changed files, commands run, and residual risk.",
+            ]
+        )
+    elif target == "claude":
+        clauses.extend(
+            [
+                "Think through edge cases explicitly.",
+                "Use concise reasoning summaries instead of hidden leaps.",
+                "Return an answer that can be handed to an implementation agent if code changes are needed.",
+            ]
+        )
+    else:
+        clauses.extend(
+            [
+                "Use the strongest available tools for the job.",
+                "Return a self-contained result that another model or human can verify.",
+            ]
+        )
+
+    if mode == "debug":
+        clauses.extend(
+            [
+                "Rank likely causes by evidence.",
+                "Run the smallest discriminating check before proposing broad fixes.",
+            ]
+        )
+    elif mode == "review":
+        clauses.extend(
+            [
+                "Lead with findings ordered by severity.",
+                "Every finding needs evidence, impact, and a concrete fix.",
+            ]
+        )
+    elif mode == "research":
+        clauses.extend(
+            [
+                "Browse or cite primary/current sources when facts may have changed.",
+                "Distinguish quoted source facts from your synthesis.",
+            ]
+        )
+    elif mode == "architecture":
+        clauses.extend(
+            [
+                "Compare at least two viable options.",
+                "State the decision, why it wins, and what would change the decision.",
+            ]
+        )
+    elif mode == "security":
+        clauses.extend(
+            [
+                "Map assets, trust boundaries, attack paths, and mitigations.",
+                "Include a red-team pass against your own recommendation.",
+            ]
+        )
+    elif mode == "extraction":
+        clauses.extend(
+            [
+                "Define the output schema before extracting.",
+                "Validate malformed, missing, and ambiguous fields.",
+            ]
+        )
+    elif mode == "eval":
+        clauses.extend(
+            [
+                "Keep prompts, temperature, inputs, and scoring consistent.",
+                "Record raw outputs before judging them.",
+            ]
+        )
+    else:
+        clauses.extend(
+            [
+                "Identify the local pattern before changing implementation.",
+                "Finish with targeted validation and a concise handoff.",
+            ]
+        )
+
+    if risk == "high":
+        clauses.extend(
+            [
+                "Stop before destructive operations, secrets changes, production restarts, data deletion, or irreversible actions.",
+                "Provide rollback or recovery steps for every risky change.",
+            ]
+        )
+    elif risk == "medium":
+        clauses.append("Call out migration, deployment, permission, and compatibility risks before acting.")
+
+    return clauses
+
+
+def build_prompt(overlay: Overlay) -> str:
+    mode_spec = MODES[overlay.mode]
+    clauses = "\n".join(f"- {clause}" for clause in overlay_clauses(overlay.mode, overlay.target, overlay.risk))
+    cwd_text = str(overlay.cwd)
+
+    return "\n".join(
+        [
+            "# AI Harness Overlay Prompt",
+            "",
+            "## User Request",
+            overlay.request,
+            "",
+            "## Auto-Routing",
+            f"- Mode: {mode_spec['title']}",
+            f"- Target: {overlay.target}",
+            f"- Recommended route: {mode_spec['route']}",
+            f"- Risk: {overlay.risk}",
+            f"- Workspace: {cwd_text}",
+            "",
+            "## Operating Contract",
+            clauses,
+            "",
+            "## Execution Loop",
+            "1. Convert the user request into concrete acceptance criteria.",
+            "2. Gather only the context needed to act correctly.",
+            "3. State facts, assumptions, unknowns, and risks before committing to a direction.",
+            "4. Do the work or produce the requested artifact.",
+            "5. Run the most relevant validation available; if validation cannot run, explain why and provide a substitute check.",
+            "6. Self-review the result for missed requirements, weak assumptions, and avoidable complexity.",
+            "7. Final answer: outcome, evidence, validation, risks, and next action if any.",
+            "",
+            "## Required Working Notes",
+            "- Facts: observed evidence only.",
+            "- Assumptions: what you are taking as true, with confidence.",
+            "- Unknowns: what remains unverified and whether it matters.",
+            "- Validation: commands, checks, sources, or examples used to falsify the result.",
+            "",
+            "## Output Shape",
+            "Start with a high-level summary and current status. Then use the shortest format that fully handles the task. For code work, include changed files and tests. For review, include findings first. For research, include source links. For plans, include ordered steps and decision criteria.",
+            "",
+        ]
+    )
+
+
+def unique_run_dir(request: str) -> Path:
+    return unique_dated_dir(ROOT / "runs", request)
+
+
+def unique_dated_dir(parent: Path, name: str) -> Path:
+    stamp = dt.date.today().isoformat()
+    base = parent / f"{stamp}-{slugify(name)}"
+    if not base.exists():
+        return base
+
+    for index in range(2, 1000):
+        candidate = Path(f"{base}-{index:02d}")
+        if not candidate.exists():
+            return candidate
+
+    raise SystemExit(f"Could not create a unique directory for: {base}")
+
+
+def write_run(prompt: str, overlay: Overlay) -> Path:
+    run_dir = unique_run_dir(overlay.request)
+    run_dir.mkdir(parents=True, exist_ok=False)
+    (run_dir / "prompt.md").write_text(prompt)
+    (run_dir / "request.txt").write_text(redact_request(overlay.request) + "\n")
+    (run_dir / "metadata.txt").write_text(
+        "\n".join(
+            [
+                f"created={utc_now().isoformat(timespec='seconds')}",
+                f"mode={overlay.mode}",
+                f"target={overlay.target}",
+                f"risk={overlay.risk}",
+                f"workspace={overlay.cwd}",
+                f"version={read_version()}",
+                "",
+            ]
+        )
+    )
+    return run_dir
+
+
+def append_metadata(run_dir: Path, **values: object) -> None:
+    with (run_dir / "metadata.txt").open("a") as handle:
+        for key, value in values.items():
+            handle.write(f"{key}={value}\n")
+
+
+def final_message_summary(final_out: Path, limit: int = 1200) -> str:
+    if not final_out.exists():
+        return "Final Codex response was not captured."
+
+    text = final_out.read_text(errors="replace").strip()
+    if not text:
+        return "Final Codex response was empty."
+
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    summary = "\n".join(lines[:12])
+    if len(summary) > limit:
+        summary = summary[: limit - 3].rstrip() + "..."
+    return summary
+
+
+def print_completion_summary(overlay: Overlay, run_dir: Path, final_out: Path, exit_code: int) -> None:
+    status = "success" if exit_code == 0 else "failed"
+    print("", file=sys.stderr)
+    print("AIH run complete", file=sys.stderr)
+    print(f"- Status: {status} (exit {exit_code})", file=sys.stderr)
+    print(f"- Request: {redact_request(overlay.request)}", file=sys.stderr)
+    print(f"- Mode/target/risk: {overlay.mode}/{overlay.target}/{overlay.risk}", file=sys.stderr)
+    print(f"- Run record: {run_dir}", file=sys.stderr)
+    print(f"- Final response: {final_out}", file=sys.stderr)
+    print("- High-level summary:", file=sys.stderr)
+    for line in final_message_summary(final_out).splitlines():
+        print(f"  {line}", file=sys.stderr)
+
+
+def overlay_from_args(args: argparse.Namespace) -> tuple[Overlay, str]:
+    request = read_request(args)
+    mode = classify_mode(request, args.mode)
+    target = choose_target(request, args.target, mode)
+    risk = infer_risk(request)
+    overlay = Overlay(request=request, mode=mode, target=target, cwd=Path.cwd(), risk=risk)
+    return overlay, build_prompt(overlay)
+
+
+def cmd_do(args: argparse.Namespace) -> None:
+    overlay, prompt = overlay_from_args(args)
+
+    if overlay.target != "codex":
+        print(prompt)
+        print(f"\nAIH did not auto-execute because target is {overlay.target}. Use --target codex to execute with Codex.")
+        return
+
+    codex = os.environ.get("AIH_CODEX_BIN") or shutil.which("codex")
+    if not codex:
+        print(prompt)
+        raise SystemExit("\nAIH could not find the codex CLI, so it printed the strengthened prompt instead.")
+
+    run_dir = write_run(prompt, overlay)
+    final_out = run_dir / "codex-final.md"
+    command = [
+        codex,
+        "exec",
+        "--cd",
+        str(overlay.cwd),
+        "--skip-git-repo-check",
+        "--sandbox",
+        "workspace-write",
+        "--output-last-message",
+        str(final_out),
+        prompt,
+    ]
+    append_metadata(run_dir, execution="codex exec", final_output=final_out)
+
+    print(f"AIH executing with Codex. Run record: {run_dir}", file=sys.stderr)
+    result = subprocess.run(command)
+    append_metadata(run_dir, completed=utc_now().isoformat(timespec="seconds"), exit_code=result.returncode)
+    print_completion_summary(overlay, run_dir, final_out, result.returncode)
+    raise SystemExit(result.returncode)
+
+
+def cmd_ask(args: argparse.Namespace) -> None:
+    overlay, prompt = overlay_from_args(args)
+
+    if args.out:
+        out = Path(args.out).expanduser()
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(prompt)
+        print(out)
+        return
+
+    if args.save:
+        run_dir = write_run(prompt, overlay)
+        print(run_dir / "prompt.md")
+        return
+
+    print(prompt)
+
+
+def cmd_run(args: argparse.Namespace) -> None:
+    overlay, prompt = overlay_from_args(args)
+    run_dir = write_run(prompt, overlay)
+    print(run_dir)
+
+
+def cmd_list(_: argparse.Namespace) -> None:
+    for path in files():
+        print(f"{path.relative_to(ROOT)}")
+
+
+def cmd_show(args: argparse.Namespace) -> None:
+    path = match_file(args.query)
+    print(path.read_text())
+
+
+def cmd_new_run(args: argparse.Namespace) -> None:
+    run_dir = unique_run_dir(args.slug)
+    run_dir.mkdir(parents=True, exist_ok=False)
+    shutil.copyfile(ROOT / "templates" / "00-universal-task-brief.md", run_dir / "task-brief.md")
+    (run_dir / "evidence.md").write_text("# Evidence\n\n")
+    (run_dir / "decisions.md").write_text("# Decisions\n\n")
+    (run_dir / "handoff.md").write_text((ROOT / "templates" / "07-agent-handoff.md").read_text())
+    print(run_dir)
+
+
+def cmd_compile(args: argparse.Namespace) -> None:
+    template = match_file(args.template)
+    brief = Path(args.brief).expanduser()
+    if not brief.exists():
+        raise SystemExit(f"Brief not found: {brief}")
+    parts = [
+        "# Compiled Harness Prompt",
+        f"Generated: {dt.datetime.now().isoformat(timespec='seconds')}",
+        f"Template: {template.relative_to(ROOT)}",
+        "",
+        "## Template",
+        template.read_text(),
+        "",
+        "## Filled Brief",
+        brief.read_text(),
+        "",
+        "## Required Agent Behavior",
+        "- Separate facts, assumptions, unknowns, and inferences.",
+        "- Do not invent missing evidence.",
+        "- State validation steps and rollback.",
+        "- Stop before destructive or irreversible changes.",
+    ]
+    output = "\n".join(parts)
+    if args.out:
+        out = Path(args.out).expanduser()
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(output)
+        print(out)
+    else:
+        print(output)
+
+
+def doctor_checks(strict: bool = False) -> list[Check]:
+    checks: list[Check] = [
+        Check("root exists", ROOT.exists(), str(ROOT)),
+        Check("aih executable", os.access(Path(__file__), os.X_OK), str(Path(__file__))),
+        Check("system python", shutil.which("python3") is not None, shutil.which("python3") or "missing"),
+    ]
+
+    for directory in CORE_DIRS:
+        checks.append(Check(f"{directory}/ exists", (ROOT / directory).is_dir(), directory))
+
+    for filename in CORE_FILES:
+        checks.append(Check(f"{filename} exists", (ROOT / filename).is_file(), filename))
+
+    harness_files = files()
+    stems = [path.stem for path in harness_files]
+    duplicate_stems = sorted({stem for stem in stems if stems.count(stem) > 1})
+    checks.append(Check("harness files indexed", len(harness_files) >= 20, f"{len(harness_files)} markdown files"))
+    checks.append(Check("no duplicate harness file names", not duplicate_stems, ", ".join(duplicate_stems) or "none"))
+
+    codex_skill = Path.home() / ".codex/skills/dmitriy-ai-harness/SKILL.md"
+    checks.append(Check("codex skill installed", codex_skill.exists(), str(codex_skill), required=False))
+    checks.append(Check("codex cli available", shutil.which("codex") is not None, shutil.which("codex") or "missing", required=strict))
+    checks.append(Check("git available", shutil.which("git") is not None, shutil.which("git") or "missing", required=False))
+    checks.append(Check("release records directory", (ROOT / "runs" / "releases").is_dir(), "runs/releases", required=False))
+    return checks
+
+
+def doctor_payload(strict: bool = False) -> tuple[dict[str, object], bool]:
+    checks = doctor_checks(strict=strict)
+    failed = any(not check.ok and check.required for check in checks)
+    payload = {
+        "ok": not failed,
+        "strict": strict,
+        "root": str(ROOT),
+        "version": read_version(),
+        "generated_at": utc_now().isoformat(timespec="seconds"),
+        "checks": [
+            {
+                "name": check.name,
+                "status": check.status,
+                "ok": check.ok,
+                "required": check.required,
+                "detail": check.detail,
+            }
+            for check in checks
+        ],
+    }
+    return payload, failed
+
+
+def cmd_doctor(args: argparse.Namespace) -> None:
+    payload, failed = doctor_payload(strict=args.strict)
+
+    if args.json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        raise SystemExit(1 if failed else 0)
+
+    for check in doctor_checks(strict=args.strict):
+        print(f"{check.status:4} {check.name}: {check.detail}")
+    raise SystemExit(1 if failed else 0)
+
+
+def build_manifest() -> dict[str, object]:
+    return {
+        "name": "Dmitriy AI Harness",
+        "version": read_version(),
+        "root": str(ROOT),
+        "generated_at": utc_now().isoformat(timespec="seconds"),
+        "commands": sorted({"ask", "compile", "do", "doctor", "health", "list", "manifest", "new-run", "prompt", "release", "run", "show"}),
+        "modes": {mode: {"title": spec["title"], "route": spec["route"]} for mode, spec in MODES.items()},
+        "search_dirs": SEARCH_DIRS,
+        "file_counts": {directory: len(list((ROOT / directory).glob("*.md"))) if (ROOT / directory).exists() else 0 for directory in SEARCH_DIRS},
+    }
+
+
+def cmd_manifest(args: argparse.Namespace) -> None:
+    manifest = build_manifest()
+    if args.json:
+        print(json.dumps(manifest, indent=2, sort_keys=True))
+        return
+
+    print(f"{manifest['name']} {manifest['version']}")
+    print(f"Root: {manifest['root']}")
+    print("Commands: " + ", ".join(manifest["commands"]))
+    print("Modes: " + ", ".join(manifest["modes"].keys()))
+
+
+def run_self_tests() -> subprocess.CompletedProcess[str]:
+    tests_dir = ROOT / "tests"
+    if tests_dir.is_dir():
+        command = [sys.executable, "-m", "unittest", "discover", "-s", str(tests_dir), "-v"]
+    else:
+        command = [sys.executable, "-m", "unittest", "-v"]
+    return subprocess.run(command, cwd=ROOT, text=True, capture_output=True, timeout=120)
+
+
+def release_validation_markdown(name: str, strict: bool, doctor_ok: bool, tests: subprocess.CompletedProcess[str]) -> str:
+    gate_lines = "\n".join(f"- [x] {gate}" for gate in RELEASE_GATES)
+    return "\n".join(
+        [
+            f"# Release Validation: {name}",
+            "",
+            f"- Created: {utc_now().isoformat(timespec='seconds')}",
+            f"- Version: {read_version()}",
+            f"- Strict doctor: {strict}",
+            f"- Doctor passed: {doctor_ok}",
+            f"- Self-tests passed: {tests.returncode == 0}",
+            "",
+            "## Production Gates",
+            gate_lines,
+            "",
+            "## Commands",
+            "- `aih doctor --json`",
+            "- `python3 -m unittest discover -s tests -v`",
+            "- `aih manifest --json`",
+            "",
+            "## Failure Handling",
+            "If any required doctor check or self-test fails, do not ship the release. Fix the failed check, rerun `aih release`, and use the newest release packet as evidence.",
+            "",
+            "## Rollback",
+            "Keep the previous release packet under `runs/releases/`. Revert to the previous `scripts/aih` and documentation state, then rerun `aih doctor` and the self-tests before using the harness for production work.",
+            "",
+        ]
+    )
+
+
+def cmd_release(args: argparse.Namespace) -> None:
+    release_root = ROOT / "runs" / "releases"
+    release_dir = unique_dated_dir(release_root, args.name)
+    release_dir.mkdir(parents=True, exist_ok=False)
+
+    doctor, doctor_failed = doctor_payload(strict=args.strict)
+    manifest = build_manifest()
+    tests = run_self_tests()
+
+    (release_dir / "doctor.json").write_text(json.dumps(doctor, indent=2, sort_keys=True) + "\n")
+    (release_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    (release_dir / "self-test.log").write_text(tests.stdout + tests.stderr)
+    (release_dir / "validation.md").write_text(release_validation_markdown(args.name, args.strict, not doctor_failed, tests))
+    (release_dir / "known-limitations.md").write_text(
+        "\n".join(
+            [
+                "# Known Limitations",
+                "",
+                "- `aih` depends on the Codex CLI for automatic execution; without it, prompt generation still works.",
+                "- `aih health` records local system diagnostics and may include machine-specific package, disk, or service names.",
+                "- Secret-like values are redacted from `request.txt`, but generated prompts retain the original request so execution context is preserved.",
+                "",
+            ]
+        )
+    )
+    (release_dir / "support-note.md").write_text(
+        "\n".join(
+            [
+                "# Support Note",
+                "",
+                "Start with `aih doctor --strict` when diagnosing harness failures.",
+                "Use `aih manifest --json` to confirm the available command surface.",
+                "For failed Codex executions, inspect the run directory printed in the completion summary, especially `prompt.md`, `metadata.txt`, and `codex-final.md`.",
+                "",
+            ]
+        )
+    )
+    example = build_prompt(
+        Overlay(
+            request="fix the failing checkout tests and keep changes minimal",
+            mode="implementation",
+            target="codex",
+            cwd=ROOT,
+            risk="normal",
+        )
+    )
+    (release_dir / "example-prompt.md").write_text(example)
+
+    print(release_dir)
+    if doctor_failed or tests.returncode != 0:
+        raise SystemExit(1)
+
+
+def cmd_health(args: argparse.Namespace) -> None:
+    run_dir = ROOT / "runs" / "system-health"
+    run_dir.mkdir(parents=True, exist_ok=True)
+    stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    out = run_dir / f"health-{stamp}.txt"
+    commands = [
+        ["uname", "-a"],
+        ["uptime"],
+        ["free", "-h"],
+        ["swapon", "--show"],
+        ["df", "-hT"],
+        ["systemctl", "--failed", "--no-pager"],
+        ["docker", "system", "df"],
+    ]
+    with out.open("w") as handle:
+        for command in commands:
+            handle.write(f"$ {' '.join(command)}\n")
+            try:
+                result = subprocess.run(command, text=True, capture_output=True, timeout=60)
+                handle.write(result.stdout)
+                handle.write(result.stderr)
+                handle.write(f"\nexit={result.returncode}\n\n")
+            except Exception as exc:
+                handle.write(f"ERROR: {exc}\n\n")
+    print(out)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="aih",
+        description="AI Harness action wrapper: execute plain requests through Codex or print stronger prompts for other LLMs.",
+        epilog='Shortcut: aih fix the login bug  ==  aih do "fix the login bug"',
+    )
+    sub = parser.add_subparsers(dest="command")
+
+    p = sub.add_parser("do", help="Execute a strengthened request with Codex when routed to Codex")
+    p.add_argument("request", nargs="*")
+    p.add_argument("--file", help="Read the request from a file")
+    p.add_argument("--mode", default="auto", choices=["auto", *MODES.keys()])
+    p.add_argument("--target", default="auto", choices=["auto", "codex", "claude", "generic"])
+    p.set_defaults(func=cmd_do)
+
+    p = sub.add_parser("ask", help="Build a strengthened overlay prompt from a plain request")
+    p.add_argument("request", nargs="*")
+    p.add_argument("--file", help="Read the request from a file")
+    p.add_argument("--mode", default="auto", choices=["auto", *MODES.keys()])
+    p.add_argument("--target", default="auto", choices=["auto", "codex", "claude", "generic"])
+    p.add_argument("--out", help="Write the prompt to a file")
+    p.add_argument("--save", action="store_true", help="Save the prompt in runs/ and print the path")
+    p.set_defaults(func=cmd_ask)
+
+    p = sub.add_parser("prompt", help="Alias for ask: print a strengthened prompt without executing")
+    p.add_argument("request", nargs="*")
+    p.add_argument("--file", help="Read the request from a file")
+    p.add_argument("--mode", default="auto", choices=["auto", *MODES.keys()])
+    p.add_argument("--target", default="auto", choices=["auto", "codex", "claude", "generic"])
+    p.add_argument("--out", help="Write the prompt to a file")
+    p.add_argument("--save", action="store_true", help="Save the prompt in runs/ and print the path")
+    p.set_defaults(func=cmd_ask)
+
+    p = sub.add_parser("run", help="Create a run directory containing the strengthened prompt")
+    p.add_argument("request", nargs="*")
+    p.add_argument("--file", help="Read the request from a file")
+    p.add_argument("--mode", default="auto", choices=["auto", *MODES.keys()])
+    p.add_argument("--target", default="auto", choices=["auto", "codex", "claude", "generic"])
+    p.set_defaults(func=cmd_run)
+
+    p = sub.add_parser("list", help="List deeper harness files")
+    p.set_defaults(func=cmd_list)
+
+    p = sub.add_parser("show", help="Show a template/playbook/checklist by partial name")
+    p.add_argument("query")
+    p.set_defaults(func=cmd_show)
+
+    p = sub.add_parser("new-run", help="Create a classic run directory")
+    p.add_argument("slug")
+    p.set_defaults(func=cmd_new_run)
+
+    p = sub.add_parser("compile", help="Compile a classic template and filled brief into one prompt")
+    p.add_argument("template")
+    p.add_argument("brief")
+    p.add_argument("--out")
+    p.set_defaults(func=cmd_compile)
+
+    p = sub.add_parser("doctor", help="Validate harness wiring")
+    p.add_argument("--json", action="store_true", help="Emit machine-readable diagnostics")
+    p.add_argument("--strict", action="store_true", help="Require optional execution dependencies such as codex")
+    p.set_defaults(func=cmd_doctor)
+
+    p = sub.add_parser("manifest", help="Describe harness capabilities for automation")
+    p.add_argument("--json", action="store_true", help="Emit machine-readable manifest")
+    p.set_defaults(func=cmd_manifest)
+
+    p = sub.add_parser("release", help="Create a production readiness release evidence packet")
+    p.add_argument("name", help="Release name or purpose")
+    p.add_argument("--strict", action="store_true", help="Require optional execution dependencies such as codex")
+    p.set_defaults(func=cmd_release)
+
+    p = sub.add_parser("health", help="Write a system health snapshot")
+    p.set_defaults(func=cmd_health)
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    parser = build_parser()
+
+    subcommands = {"do", "ask", "prompt", "run", "list", "show", "new-run", "compile", "doctor", "manifest", "release", "health", "-h", "--help"}
+    if argv and argv[0] not in subcommands:
+        argv = ["do", *argv]
+
+    args = parser.parse_args(argv)
+    if not hasattr(args, "func"):
+        parser.print_help()
+        return 0
+    args.func(args)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
