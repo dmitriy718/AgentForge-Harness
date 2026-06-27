@@ -1,0 +1,14 @@
+test_architecture_clause_is_not_duplicated (test_aih.AihOverlayTests.test_architecture_clause_is_not_duplicated) ... ok
+test_completion_summary_includes_captured_final_response (test_aih.AihOverlayTests.test_completion_summary_includes_captured_final_response) ... ok
+test_debug_requests_route_to_codex (test_aih.AihOverlayTests.test_debug_requests_route_to_codex) ... ok
+test_implementation_requests_route_to_codex (test_aih.AihOverlayTests.test_implementation_requests_route_to_codex) ... ok
+test_manifest_json_describes_public_command_surface (test_aih.AihOverlayTests.test_manifest_json_describes_public_command_surface) ... ok
+test_new_run_records_do_not_overwrite (test_aih.AihOverlayTests.test_new_run_records_do_not_overwrite) ... ok
+test_plain_request_executes_through_codex_wrapper (test_aih.AihOverlayTests.test_plain_request_executes_through_codex_wrapper) ... ok
+test_release_creates_validation_packet (test_aih.AihOverlayTests.test_release_creates_validation_packet) ... ok
+test_run_records_do_not_overwrite_and_redact_secret_like_values (test_aih.AihOverlayTests.test_run_records_do_not_overwrite_and_redact_secret_like_values) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.599s
+
+OK

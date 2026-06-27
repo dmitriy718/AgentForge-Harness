@@ -1,0 +1,222 @@
+Started: 2026-06-26T20:10:14-04:00
+
+## OS
+Linux GT1 6.17.0-35-generic #35~24.04.1-Ubuntu SMP PREEMPT_DYNAMIC Tue May 26 19:30:42 UTC 2 x86_64 x86_64 x86_64 GNU/Linux
+Distributor ID:	Linuxmint
+Description:	Linux Mint 22.3
+Release:	22.3
+Codename:	zena
+ 20:10:14 up 8 days, 14:18,  1 user,  load average: 0.53, 0.62, 0.55
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            30Gi       6.0Gi       5.7Gi       424Mi        20Gi        24Gi
+Swap:           15Gi          0B        15Gi
+NAME      TYPE SIZE USED PRIO
+/swapfile file  16G   0B   -2
+
+## Filesystems
+Filesystem     Type      Size  Used Avail Use% Mounted on
+tmpfs          tmpfs     3.1G  3.4M  3.1G   1% /run
+efivarfs       efivarfs  192K  124K   64K  67% /sys/firmware/efi/efivars
+/dev/nvme0n1p2 ext4      1.9T  619G  1.2T  35% /
+tmpfs          tmpfs      16G   49M   16G   1% /dev/shm
+tmpfs          tmpfs     5.0M  8.0K  5.0M   1% /run/lock
+tmpfs          tmpfs      16G  220K   16G   1% /run/qemu
+/dev/nvme0n1p1 vfat      511M  6.2M  505M   2% /boot/efi
+tmpfs          tmpfs     3.1G  5.0M  3.1G   1% /run/user/1000
+overlay        overlay   1.9T  619G  1.2T  35% /var/lib/docker/rootfs/overlayfs/0aec5874aa535794de78c4216ec56ee7b16460f41afb3707b588454c530001a3
+overlay        overlay   1.9T  619G  1.2T  35% /var/lib/docker/rootfs/overlayfs/39f68366be3957233511041d52d1eaac968e8a06aaba44258279662c908bb29c
+overlay        overlay   1.9T  619G  1.2T  35% /var/lib/docker/rootfs/overlayfs/d196e249c1a05faf106bdf3670775f4012b360e2d8a5b0e444a41b9a6d1f9f69
+overlay        overlay   1.9T  619G  1.2T  35% /var/lib/docker/rootfs/overlayfs/9c54b00c91e41ce993289a1dc92edc0dda9f68f45dfd49e9a1fb7b662cb7f473
+overlay        overlay   1.9T  619G  1.2T  35% /var/lib/docker/rootfs/overlayfs/add9bad7622399e94ad447c332bc360408fce1f3edec884c2f8bac1e7e6e64a2
+overlay        overlay   1.9T  619G  1.2T  35% /var/lib/docker/rootfs/overlayfs/f887a311b252875d554e0a8384dbe765f1498ce2e334ed480d9be4e627920f85
+overlay        overlay   1.9T  619G  1.2T  35% /var/lib/docker/rootfs/overlayfs/0c4d0611355694d72e4ea2a450586654fc7ddac06976ad1a9f856bef20347a06
+overlay        overlay   1.9T  619G  1.2T  35% /var/lib/docker/rootfs/overlayfs/53de120cfdc8574c7343ef024638b409adb4fac13b3d878b9e764646ad50f73d
+overlay        overlay   1.9T  619G  1.2T  35% /var/lib/docker/rootfs/overlayfs/f049a7e74b090cccd6522160573f4c6fb8933a9c2aee9ce3dd295531bb020eee
+overlay        overlay   1.9T  619G  1.2T  35% /var/lib/docker/rootfs/overlayfs/e8f262f751784a9b16109d6b8a8ea2e1e2d43a44503abdd5d0c20d8e3ebf2e8b
+overlay        overlay   1.9T  619G  1.2T  35% /var/lib/docker/rootfs/overlayfs/dfccf3b3ce3234068387a29b5735b5e3a7073ac2169f3a1e9e95cf12bd40a09a
+overlay        overlay   1.9T  619G  1.2T  35% /var/lib/docker/rootfs/overlayfs/b19902fee4f8574bec19eea03048ced43c6a600ff8c68e2965bc2a6be612fb34
+Filesystem     Inodes IUsed IFree IUse% Mounted on
+tmpfs            3.9M  1.6K  3.9M    1% /run
+efivarfs            0     0     0     - /sys/firmware/efi/efivars
+/dev/nvme0n1p2   120M   15M  106M   12% /
+tmpfs            3.9M   176  3.9M    1% /dev/shm
+tmpfs            3.9M     8  3.9M    1% /run/lock
+tmpfs            3.9M     8  3.9M    1% /run/qemu
+/dev/nvme0n1p1      0     0     0     - /boot/efi
+tmpfs            791K   178  791K    1% /run/user/1000
+overlay          120M   15M  106M   12% /var/lib/docker/rootfs/overlayfs/0aec5874aa535794de78c4216ec56ee7b16460f41afb3707b588454c530001a3
+overlay          120M   15M  106M   12% /var/lib/docker/rootfs/overlayfs/39f68366be3957233511041d52d1eaac968e8a06aaba44258279662c908bb29c
+overlay          120M   15M  106M   12% /var/lib/docker/rootfs/overlayfs/d196e249c1a05faf106bdf3670775f4012b360e2d8a5b0e444a41b9a6d1f9f69
+overlay          120M   15M  106M   12% /var/lib/docker/rootfs/overlayfs/9c54b00c91e41ce993289a1dc92edc0dda9f68f45dfd49e9a1fb7b662cb7f473
+overlay          120M   15M  106M   12% /var/lib/docker/rootfs/overlayfs/add9bad7622399e94ad447c332bc360408fce1f3edec884c2f8bac1e7e6e64a2
+overlay          120M   15M  106M   12% /var/lib/docker/rootfs/overlayfs/f887a311b252875d554e0a8384dbe765f1498ce2e334ed480d9be4e627920f85
+overlay          120M   15M  106M   12% /var/lib/docker/rootfs/overlayfs/0c4d0611355694d72e4ea2a450586654fc7ddac06976ad1a9f856bef20347a06
+overlay          120M   15M  106M   12% /var/lib/docker/rootfs/overlayfs/53de120cfdc8574c7343ef024638b409adb4fac13b3d878b9e764646ad50f73d
+overlay          120M   15M  106M   12% /var/lib/docker/rootfs/overlayfs/f049a7e74b090cccd6522160573f4c6fb8933a9c2aee9ce3dd295531bb020eee
+overlay          120M   15M  106M   12% /var/lib/docker/rootfs/overlayfs/e8f262f751784a9b16109d6b8a8ea2e1e2d43a44503abdd5d0c20d8e3ebf2e8b
+overlay          120M   15M  106M   12% /var/lib/docker/rootfs/overlayfs/dfccf3b3ce3234068387a29b5735b5e3a7073ac2169f3a1e9e95cf12bd40a09a
+overlay          120M   15M  106M   12% /var/lib/docker/rootfs/overlayfs/b19902fee4f8574bec19eea03048ced43c6a600ff8c68e2965bc2a6be612fb34
+
+## Failed units
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+
+## NVMe SMART
+smartctl 7.4 2023-08-01 r5530 [x86_64-linux-6.17.0-35-generic] (local build)
+Copyright (C) 2002-23, Bruce Allen, Christian Franke, www.smartmontools.org
+
+=== START OF INFORMATION SECTION ===
+Model Number:                       Lexar SSD NQ7A1 2TB
+Serial Number:                      QE9472R000939P2237
+Firmware Version:                   V1.2.3
+PCI Vendor/Subsystem ID:            0x1d97
+IEEE OUI Identifier:                0xcaf25b
+Total NVM Capacity:                 2,048,408,248,320 [2.04 TB]
+Unallocated NVM Capacity:           0
+Controller ID:                      0
+NVMe Version:                       2.0
+Number of Namespaces:               1
+Namespace 1 Size/Capacity:          2,048,408,248,320 [2.04 TB]
+Namespace 1 Formatted LBA Size:     512
+Namespace 1 IEEE EUI-64:            caf25b 039a000167
+Local Time is:                      Fri Jun 26 20:10:14 2026 EDT
+Firmware Updates (0x14):            2 Slots, no Reset required
+Optional Admin Commands (0x0017):   Security Format Frmw_DL Self_Test
+Optional NVM Commands (0x005f):     Comp Wr_Unc DS_Mngmt Wr_Zero Sav/Sel_Feat Timestmp
+Log Page Attributes (0x06):         Cmd_Eff_Lg Ext_Get_Lg
+Maximum Data Transfer Size:         128 Pages
+Warning  Comp. Temp. Threshold:     90 Celsius
+Critical Comp. Temp. Threshold:     95 Celsius
+
+Supported Power States
+St Op     Max   Active     Idle   RL RT WL WT  Ent_Lat  Ex_Lat
+ 0 +     6.50W       -        -    0  0  0  0        0       0
+ 1 +     5.80W       -        -    1  1  1  1        0       0
+ 2 +     3.60W       -        -    2  2  2  2        0       0
+ 3 -   0.0500W       -        -    3  3  3  3     5000   10000
+ 4 -   0.0025W       -        -    4  4  4  4     8000   45000
+
+Supported LBA Sizes (NSID 0x1)
+Id Fmt  Data  Metadt  Rel_Perf
+ 0 +     512       0         0
+
+=== START OF SMART DATA SECTION ===
+SMART overall-health self-assessment test result: PASSED
+
+SMART/Health Information (NVMe Log 0x02)
+Critical Warning:                   0x00
+Temperature:                        40 Celsius
+Available Spare:                    100%
+Available Spare Threshold:          1%
+Percentage Used:                    2%
+Data Units Read:                    15,083,138 [7.72 TB]
+Data Units Written:                 27,570,597 [14.1 TB]
+Host Read Commands:                 125,549,433
+Host Write Commands:                291,436,696
+Controller Busy Time:               283
+Power Cycles:                       178
+Power On Hours:                     320
+Unsafe Shutdowns:                   51
+Media and Data Integrity Errors:    0
+Error Information Log Entries:      0
+Warning  Comp. Temperature Time:    19
+Critical Comp. Temperature Time:    29
+Temperature Sensor 1:               40 Celsius
+Temperature Sensor 2:               11 Celsius
+Thermal Temp. 1 Transition Count:   1
+Thermal Temp. 1 Total Time:         1
+
+Error Information (NVMe Log 0x01, 16 of 64 entries)
+No Errors Logged
+
+Read Self-test Log failed: Invalid Field in Command (0x002)
+
+
+## NVMe log
+Smart Log for NVME device:nvme0n1 namespace-id:ffffffff
+critical_warning			: 0
+temperature				: 40 °C (313 K)
+available_spare				: 100%
+available_spare_threshold		: 1%
+percentage_used				: 2%
+endurance group critical warning summary: 0
+Data Units Read				: 15083138 (7.72 TB)
+Data Units Written			: 27570597 (14.12 TB)
+host_read_commands			: 125549433
+host_write_commands			: 291436696
+controller_busy_time			: 283
+power_cycles				: 178
+power_on_hours				: 320
+unsafe_shutdowns			: 51
+media_errors				: 0
+num_err_log_entries			: 0
+Warning Temperature Time		: 19
+Critical Composite Temperature Time	: 29
+Temperature Sensor 1           : 40 °C (313 K)
+Temperature Sensor 2           : 11 °C (284 K)
+Thermal Management T1 Trans Count	: 1
+Thermal Management T2 Trans Count	: 0
+Thermal Management T1 Total Time	: 1
+Thermal Management T2 Total Time	: 0
+
+## Sensors
+coretemp-isa-0000
+Adapter: ISA adapter
+Package id 0:  +54.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 0:        +50.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 1:        +50.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 2:        +50.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 3:        +49.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 4:        +50.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 5:        +50.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 6:        +50.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 7:        +50.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 8:        +50.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 12:       +50.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 16:       +49.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 20:       +48.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 24:       +48.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 28:       +47.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 32:       +53.0°C  (high = +110.0°C, crit = +110.0°C)
+Core 33:       +53.0°C  (high = +110.0°C, crit = +110.0°C)
+
+acpitz-acpi-0
+Adapter: ACPI interface
+temp1:        +27.8°C  
+
+iwlwifi_1-virtual-0
+Adapter: Virtual device
+temp1:        +49.0°C  
+
+nvme-pci-0100
+Adapter: PCI adapter
+Composite:    +40.9°C  (low  = -273.1°C, high = +89.8°C)
+                       (crit = +94.8°C)
+Sensor 1:     +40.9°C  (low  = -273.1°C, high = +65261.8°C)
+Sensor 2:     +10.8°C  (low  = -273.1°C, high = +65261.8°C)
+
+
+## Docker
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          26        12        49.32GB   3.641GB (7%)
+Containers      12        12        53.54MB   0B (0%)
+Local Volumes   9         4         277.8MB   165.8MB (59%)
+Build Cache     0         0         0B        0B
+NAMES                                       STATUS                   IMAGE
+01_supportdesk_ai-worker-1                  Up 4 minutes (healthy)   01_supportdesk_ai-worker
+01_supportdesk_ai-web-1                     Up 4 minutes (healthy)   01_supportdesk_ai-web
+01_supportdesk_ai-api-1                     Up 4 minutes (healthy)   01_supportdesk_ai-api
+01_supportdesk_ai-caddy-1                   Up 4 minutes (healthy)   caddy:2.9
+01_supportdesk_ai-redis-1                   Up 4 minutes (healthy)   redis:7.4-alpine
+01_supportdesk_ai-postgres-1                Up 4 minutes (healthy)   pgvector/pgvector:pg17
+01_supportdesk_ai-minio-1                   Up 4 minutes (healthy)   14cea493d9a3
+01_supportdesk_ai-greenmail-1               Up 4 minutes             d4208fff461f
+homeassistant                               Up 5 minutes             ghcr.io/home-assistant/home-assistant:stable
+signal-intelligence-sigint-1                Up 5 minutes (healthy)   signal-intelligence-sigint
+nova-deep-inference-nova-deep-inference-1   Up 5 minutes (healthy)   nova-deep-inference-nova-deep-inference
+data-warehouse-data-warehouse-1             Up 5 minutes (healthy)   data-warehouse-data-warehouse
+
+Finished: 2026-06-26T20:10:15-04:00

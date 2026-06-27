@@ -1,0 +1,93 @@
+Before restart:
+● bluetooth.service - Bluetooth service
+     Loaded: loaded (/usr/lib/systemd/system/bluetooth.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2026-06-18 05:51:30 EDT; 1 week 1 day ago
+       Docs: man:bluetoothd(8)
+   Main PID: 895 (bluetoothd)
+     Status: "Running"
+      Tasks: 1 (limit: 37722)
+     Memory: 2.4M (peak: 5.5M)
+        CPU: 3min 6.250s
+     CGroup: /system.slice/bluetooth.service
+             └─895 /usr/libexec/bluetooth/bluetoothd
+
+Jun 26 15:48:03 GT1 bluetoothd[895]: src/device.c:device_new() Unable to register device interface for A4:57:A0:4C:E0:67
+Jun 26 15:48:03 GT1 bluetoothd[895]: Unable to create object for found device A4:57:A0:4C:E0:67
+Jun 26 15:48:04 GT1 bluetoothd[895]: src/device.c:device_new() Unable to register device interface for 04:E4:B6:38:5F:DD
+Jun 26 15:48:04 GT1 bluetoothd[895]: Unable to create object for found device 04:E4:B6:38:5F:DD
+Jun 26 15:48:04 GT1 bluetoothd[895]: src/device.c:device_new() Unable to register device interface for 08:65:F0:D3:FF:28
+Jun 26 15:48:04 GT1 bluetoothd[895]: Unable to create object for found device 08:65:F0:D3:FF:28
+Jun 26 15:48:04 GT1 bluetoothd[895]: src/device.c:device_new() Unable to register device interface for 08:65:F0:D3:FF:28
+Jun 26 15:48:04 GT1 bluetoothd[895]: Unable to create object for found device 08:65:F0:D3:FF:28
+Jun 26 15:48:04 GT1 bluetoothd[895]: src/device.c:device_new() Unable to register device interface for 08:65:F0:D3:FF:28
+Jun 26 15:48:04 GT1 bluetoothd[895]: Unable to create object for found device 08:65:F0:D3:FF:28
+
+Controller:
+Controller 28:A4:4A:2B:9F:F7 (public)
+	Manufacturer: 0x0002 (2)
+	Version: 0x0d (13)
+	Name: GT1
+	Alias: GT1
+	Class: 0x007c0104 (8126724)
+	Powered: yes
+	Discoverable: no
+	DiscoverableTimeout: 0x000000b4 (180)
+	Pairable: yes
+	UUID: Message Notification Se.. (00001133-0000-1000-8000-00805f9b34fb)
+	UUID: A/V Remote Control        (0000110e-0000-1000-8000-00805f9b34fb)
+	UUID: OBEX Object Push          (00001105-0000-1000-8000-00805f9b34fb)
+	UUID: Message Access Server     (00001132-0000-1000-8000-00805f9b34fb)
+	UUID: PnP Information           (00001200-0000-1000-8000-00805f9b34fb)
+	UUID: IrMC Sync                 (00001104-0000-1000-8000-00805f9b34fb)
+	UUID: Vendor specific           (00005005-0000-1000-8000-0002ee000001)
+	UUID: A/V Remote Control Target (0000110c-0000-1000-8000-00805f9b34fb)
+	UUID: Generic Attribute Profile (00001801-0000-1000-8000-00805f9b34fb)
+	UUID: Phonebook Access Server   (0000112f-0000-1000-8000-00805f9b34fb)
+	UUID: Audio Sink                (0000110b-0000-1000-8000-00805f9b34fb)
+	UUID: Device Information        (0000180a-0000-1000-8000-00805f9b34fb)
+	UUID: Generic Access Profile    (00001800-0000-1000-8000-00805f9b34fb)
+	UUID: Handsfree Audio Gateway   (0000111f-0000-1000-8000-00805f9b34fb)
+	UUID: Audio Source              (0000110a-0000-1000-8000-00805f9b34fb)
+	UUID: OBEX File Transfer        (00001106-0000-1000-8000-00805f9b34fb)
+	UUID: Handsfree                 (0000111e-0000-1000-8000-00805f9b34fb)
+	Modalias: usb:v1D6Bp0246d0548
+	Discovering: no
+	Roles: central
+	Roles: peripheral
+Advertising Features:
+	ActiveInstances: 0x00 (0)
+	SupportedInstances: 0x0c (12)
+	SupportedIncludes: tx-power
+	SupportedIncludes: appearance
+	SupportedIncludes: local-name
+	SupportedSecondaryChannels: 1M
+	SupportedSecondaryChannels: 2M
+	SupportedSecondaryChannels: Coded
+
+After restart:
+● bluetooth.service - Bluetooth service
+     Loaded: loaded (/usr/lib/systemd/system/bluetooth.service; enabled; preset: enabled)
+     Active: active (running) since Fri 2026-06-26 20:10:23 EDT; 3s ago
+       Docs: man:bluetoothd(8)
+   Main PID: 1994907 (bluetoothd)
+     Status: "Running"
+      Tasks: 1 (limit: 37722)
+     Memory: 1.9M (peak: 3.6M)
+        CPU: 47ms
+     CGroup: /system.slice/bluetooth.service
+             └─1994907 /usr/libexec/bluetooth/bluetoothd
+
+Jun 26 20:10:23 GT1 bluetoothd[1994907]: Endpoint registered: sender=:1.62 path=/MediaEndpoint/A2DPSource/aptx_ll_1
+Jun 26 20:10:23 GT1 bluetoothd[1994907]: Endpoint registered: sender=:1.62 path=/MediaEndpoint/A2DPSource/aptx_ll_0
+Jun 26 20:10:23 GT1 bluetoothd[1994907]: Endpoint registered: sender=:1.62 path=/MediaEndpoint/A2DPSource/aptx_ll_duplex_1
+Jun 26 20:10:23 GT1 bluetoothd[1994907]: Endpoint registered: sender=:1.62 path=/MediaEndpoint/A2DPSource/aptx_ll_duplex_0
+Jun 26 20:10:23 GT1 bluetoothd[1994907]: Endpoint registered: sender=:1.62 path=/MediaEndpoint/A2DPSource/faststream
+Jun 26 20:10:23 GT1 bluetoothd[1994907]: Endpoint registered: sender=:1.62 path=/MediaEndpoint/A2DPSource/faststream_duplex
+Jun 26 20:10:23 GT1 bluetoothd[1994907]: Endpoint registered: sender=:1.62 path=/MediaEndpoint/A2DPSink/opus_05
+Jun 26 20:10:23 GT1 bluetoothd[1994907]: Endpoint registered: sender=:1.62 path=/MediaEndpoint/A2DPSource/opus_05
+Jun 26 20:10:23 GT1 bluetoothd[1994907]: Endpoint registered: sender=:1.62 path=/MediaEndpoint/A2DPSink/opus_05_duplex
+Jun 26 20:10:23 GT1 bluetoothd[1994907]: Endpoint registered: sender=:1.62 path=/MediaEndpoint/A2DPSource/opus_05_duplex
+
+Fresh errors since restart:
+Jun 26 20:10:23 GT1 bluetoothd[1994907]: profiles/sap/server.c:sap_server_register() Sap driver initialization failed.
+Jun 26 20:10:23 GT1 bluetoothd[1994907]: sap-server: Operation not permitted (1)
