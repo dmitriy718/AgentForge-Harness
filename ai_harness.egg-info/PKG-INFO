@@ -1,3 +1,29 @@
+Metadata-Version: 2.4
+Name: ai-harness
+Version: 2.0.0
+Summary: Action wrapper for AI coding assistants — evidence discipline, safety gates, and audit trails in one command.
+Author: Dmitriy
+License: MIT
+Project-URL: Repository, https://github.com/dmitriy718/AgentForge-Harness
+Keywords: ai,llm,codex,prompt-engineering,developer-tools,ai-quality,code-review
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Operating System :: MacOS
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Topic :: Software Development :: Quality Assurance
+Classifier: Topic :: Software Development :: Testing
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Provides-Extra: toml
+Requires-Dist: tomli>=2.0; python_version < "3.11" and extra == "toml"
+
 # How To Use The Dmitriy AI Harness
 
 The harness is now an action wrapper, not a paperwork system. You give it a plain request. If the request routes to Codex, it runs Codex with a stronger operating prompt. If you only want the prompt, use `aih prompt` or `aih ask`.

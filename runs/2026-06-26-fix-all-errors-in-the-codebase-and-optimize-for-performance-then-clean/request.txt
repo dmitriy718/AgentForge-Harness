@@ -1,0 +1,1 @@
+fix all errors in the codebase and optimize for performance, then clean up the output to the terminal window, organiuze it and make it look good, use colors if possible.

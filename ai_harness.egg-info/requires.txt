@@ -1,0 +1,5 @@
+
+[toml]
+
+[toml:python_version < "3.11"]
+tomli>=2.0
