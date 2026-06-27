@@ -7,6 +7,7 @@ This is an action wrapper for Codex, Claude, local models, or any other LLM. Giv
 ```bash
 aih fix the login bug in this repo
 aih prompt "review this PR for security and correctness" --target claude
+aih route "fix the failing checkout tests" --json
 aih run "design a safer migration plan for the billing database"
 ```
 
@@ -18,6 +19,10 @@ That is the normal workflow. You should not need to pick a template, fill a form
 - Automatic target: Codex, Claude, or generic LLM.
 - Automatic Codex execution for implementation and debugging requests.
 - End-of-run summary with status, run record, final response path, and high-level final message.
+- Colorized human terminal summaries when the output stream supports color; JSON stays plain for automation.
+- Route preview for mode, target, risk, and deep-execution detection before running work.
+- Deep execution plans for broad multi-pass review/fix requests.
+- Optional zsh shell fix so punctuation in plain-language prompts does not get treated as glob syntax.
 - Stronger operating contract: facts, assumptions, unknowns, risks, validation, and handoff.
 - Safety gates for high-risk work: production, secrets, auth, databases, deletion, and irreversible changes.
 - Collision-safe run records under `runs/` when you want an audit trail.
@@ -48,15 +53,22 @@ aih your request here
 aih do "your request here"
 aih prompt "your request here"
 aih ask "your request here"
+aih route "your request here"
 aih run "your request here"
 aih list
 aih show implementation
 aih new-run task-name
+aih install-shell
+aih latest-run
+aih latest-run --json
+aih route "your request here" --json
 aih compile implementation /path/to/task-brief.md --out /path/to/prompt.md
 aih doctor
 aih doctor --json
 aih doctor --strict
 aih manifest --json
+aih validate
+aih validate --json
 aih release "candidate name"
 aih health
 ```

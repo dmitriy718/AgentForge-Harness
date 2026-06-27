@@ -119,6 +119,95 @@ class AihOverlayTests(unittest.TestCase):
             self.assertEqual((first / "request.txt").read_text(), "debug [REDACTED] failure\n")
             self.assertIn("debug api_key=super-secret-token failure", (first / "prompt.md").read_text())
 
+    def test_run_record_mode_warns_that_codex_work_was_not_executed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_aih("run", "fix", "the", "harness", env={"AI_HARNESS_HOME": temp_dir})
+
+        self.assertIn("AIH run-record mode: no work was executed.", result.stderr)
+        self.assertIn("To execute with Codex", result.stderr)
+
+    def test_latest_run_json_returns_newest_run_record(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            first = Path(run_aih("run", "fix first issue", env={"AI_HARNESS_HOME": temp_dir}).stdout.strip())
+            second = Path(run_aih("run", "fix second issue", env={"AI_HARNESS_HOME": temp_dir}).stdout.strip())
+            payload = json.loads(run_aih("latest-run", "--json", env={"AI_HARNESS_HOME": temp_dir}).stdout)
+
+        self.assertNotEqual(first, second)
+        self.assertEqual(payload["run_dir"], str(second))
+        self.assertEqual(payload["request"], "fix second issue")
+        self.assertEqual(payload["metadata"]["target"], "codex")
+        self.assertTrue(payload["prompt"].endswith("prompt.md"))
+
+    def test_deep_requests_get_bounded_multi_pass_plan(self) -> None:
+        request = (
+            "fix i want you to first do a comprehensive codebase review and fix all findings "
+            "then do additional 4 passes from different perspective amateur senior developer "
+            "systems architect and ceo and continue until zero mistakes"
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            run_dir = Path(run_aih("run", request, env={"AI_HARNESS_HOME": temp_dir}).stdout.strip())
+
+            prompt = (run_dir / "prompt.md").read_text()
+            plan = (run_dir / "execution-plan.md").read_text()
+            metadata = (run_dir / "metadata.txt").read_text()
+
+        self.assertIn("## Deep Execution Plan", prompt)
+        self.assertIn("Pass 2 - amateur perspective", plan)
+        self.assertIn("Improvement 3 - implement one separate high-impact function", plan)
+        self.assertIn("deep_execution=True", metadata)
+
+    def test_deep_execution_announces_plan_before_codex(self) -> None:
+        request = (
+            "fix comprehensive codebase review all findings additional 4 passes "
+            "amateur senior developer systems architect ceo zero mistakes"
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_aih(
+                request,
+                env={"AIH_CODEX_BIN": "/bin/true", "AI_HARNESS_HOME": temp_dir},
+            )
+
+        self.assertIn("AIH deep execution detected", result.stderr)
+        self.assertIn("AIH execution plan:", result.stderr)
+
+    def test_prompt_mode_warns_that_codex_work_was_not_executed(self) -> None:
+        result = run_aih("prompt", "fix", "the", "harness")
+
+        self.assertIn("AIH prompt-only mode: no work was executed.", result.stderr)
+        self.assertIn("To execute with Codex", result.stderr)
+
+    def test_prompt_mode_warns_when_deep_execution_would_apply(self) -> None:
+        result = run_aih(
+            "prompt",
+            "fix comprehensive codebase review all findings additional 4 passes senior developer systems architect ceo zero mistakes",
+        )
+
+        self.assertIn("AIH prompt-only mode: no work was executed.", result.stderr)
+        self.assertIn("AIH deep execution would be used if you run this request.", result.stderr)
+
+    def test_prompt_mode_out_still_warns_when_codex_work_was_not_executed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            out = Path(temp_dir) / "prompt.md"
+            result = run_aih("prompt", "fix", "the", "harness", "--out", str(out))
+
+            self.assertEqual(result.stdout.strip(), str(out))
+            self.assertIn("AIH prompt-only mode: no work was executed.", result.stderr)
+            self.assertTrue(out.exists())
+
+    def test_prompt_mode_save_still_warns_when_codex_work_was_not_executed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_aih(
+                "prompt",
+                "fix",
+                "the",
+                "harness",
+                "--save",
+                env={"AI_HARNESS_HOME": temp_dir},
+            )
+
+            self.assertIn("AIH prompt-only mode: no work was executed.", result.stderr)
+            self.assertTrue(Path(result.stdout.strip()).exists())
+
     def test_new_run_records_do_not_overwrite(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             templates = Path(temp_dir) / "templates"
@@ -139,8 +228,83 @@ class AihOverlayTests(unittest.TestCase):
         self.assertEqual(payload["name"], "Dmitriy AI Harness")
         self.assertIn("manifest", payload["commands"])
         self.assertIn("release", payload["commands"])
+        self.assertIn("install-shell", payload["commands"])
+        self.assertIn("latest-run", payload["commands"])
+        self.assertIn("route", payload["commands"])
+        self.assertIn("validate", payload["commands"])
         self.assertIn("implementation", payload["modes"])
         self.assertGreaterEqual(payload["file_counts"]["templates"], 8)
+
+    def test_validate_json_runs_doctor_self_tests_and_manifest_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            write_minimal_harness(root)
+            tests = root / "tests"
+            tests.mkdir()
+            (tests / "test_smoke.py").write_text(
+                "import unittest\n\n"
+                "class SmokeTest(unittest.TestCase):\n"
+                "    def test_truth(self):\n"
+                "        self.assertTrue(True)\n"
+            )
+            payload = json.loads(run_aih("validate", "--json", env={"AI_HARNESS_HOME": temp_dir}).stdout)
+
+        self.assertTrue(payload["ok"])
+        self.assertTrue(payload["doctor_ok"])
+        self.assertTrue(payload["self_tests_ok"])
+        self.assertIn("validate", payload["manifest_commands"])
+
+    def test_route_json_previews_routing_without_generating_prompt(self) -> None:
+        payload = json.loads(run_aih("route", "fix", "the", "harness", "--json").stdout)
+
+        self.assertEqual(payload["mode"], "implementation")
+        self.assertEqual(payload["target"], "codex")
+        self.assertEqual(payload["risk"], "normal")
+        self.assertFalse(payload["deep_execution"])
+
+    def test_route_json_redacts_secret_like_values(self) -> None:
+        payload = json.loads(run_aih("route", "debug", "api_key=super-secret-token", "--json").stdout)
+
+        self.assertEqual(payload["request"], "debug [REDACTED]")
+
+    def test_human_output_can_use_color_without_coloring_json(self) -> None:
+        human = run_aih("route", "fix", "the", "harness", env={"AIH_COLOR": "always"})
+        machine = run_aih("route", "fix", "the", "harness", "--json", env={"AIH_COLOR": "always"})
+
+        self.assertIn("\033[", human.stdout)
+        self.assertNotIn("\033[", machine.stdout)
+        self.assertEqual(json.loads(machine.stdout)["mode"], "implementation")
+
+    def test_install_shell_writes_punctuation_safe_zsh_options(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            env_path = Path(temp_dir) / "env.sh"
+            result = run_aih("install-shell", "--path", str(env_path))
+
+            text = env_path.read_text()
+            self.assertIn("unsetopt nomatch bare_glob_qual", text)
+            self.assertIn("AIH shell punctuation fix installed", result.stdout)
+
+            second = run_aih("install-shell", "--path", str(env_path))
+            self.assertIn("already installed", second.stdout)
+
+    def test_installed_zsh_options_allow_unquoted_punctuation(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            env_path = Path(temp_dir) / "env.sh"
+            run_aih("install-shell", "--path", str(env_path))
+            result = subprocess.run(
+                [
+                    "zsh",
+                    "-f",
+                    "-lc",
+                    f"source {env_path}; {AIH} prompt fix this (with parens) [brackets] question?",
+                ],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+
+        self.assertIn("fix this (with parens) [brackets] question?", result.stdout)
 
     def test_release_creates_validation_packet(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

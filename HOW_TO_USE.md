@@ -10,7 +10,20 @@ aih fix the checkout test failure in this repo
 
 For implementation and debugging work, this executes through `codex exec` in the current directory and saves a run record.
 
+If zsh errors on punctuation such as parentheses, brackets, or `?`, install the AIH shell fix once:
+
+```bash
+aih install-shell
+source ~/.config/ai-harness/env.sh
+```
+
+New zsh sessions will then allow prompts like `aih prompt fix this (with parens) [brackets]?` without quoting.
+
 When Codex finishes, `aih` prints an end-of-run summary with status, request, mode/target/risk, run directory, final response path, and a short high-level summary from Codex's saved final message.
+
+Human-facing summaries use color when stdout/stderr is an interactive terminal. Set `AIH_COLOR=always` to force color in logs, `AIH_COLOR=never` to disable it, or `NO_COLOR=1` to follow the common no-color convention. JSON output is never colorized.
+
+Very broad requests, such as comprehensive review/fix prompts with multiple perspectives, automatically become deep executions. `aih` saves `execution-plan.md`, announces it before Codex starts, and bounds the loop so phrases like "continue until zero mistakes" do not turn into an invisible infinite process.
 
 Use `prompt` or `ask` when you want to print the strengthened prompt without executing it:
 
@@ -20,7 +33,15 @@ aih ask "debug why docker compose is failing" --target codex
 aih prompt "research the current OpenAI Responses API docs" --mode research
 ```
 
-Use `run` when the work matters enough to keep a record:
+For Codex-routed work, `prompt` prints a reminder on stderr that no work was executed. Use plain `aih <request>` or `aih do <request>` to actually run it.
+
+Use `route` when you want to preview the chosen mode, target, risk, and deep-execution status before generating or running a prompt:
+
+```bash
+aih route "fix the failing checkout tests" --json
+```
+
+Use `run` when you want to save a prompt record without executing it:
 
 ```bash
 aih run "design a rollback-safe migration for the billing database"
@@ -32,6 +53,7 @@ This creates:
 - `runs/YYYY-MM-DD-task/request.txt`
 - `runs/YYYY-MM-DD-task/metadata.txt`
 - `runs/YYYY-MM-DD-task/codex-final.md` for executed Codex runs
+- `runs/YYYY-MM-DD-task/execution-plan.md` for deep multi-pass runs
 
 Repeated runs with the same request get a numbered suffix instead of overwriting earlier evidence. Secret-like values in `request.txt` are redacted; the generated prompt still contains the original request so execution behavior is unchanged.
 
@@ -51,6 +73,7 @@ aih <plain request>
 aih do <plain request>
 aih prompt <plain request>
 aih ask <plain request> --target codex|claude|generic --mode auto
+aih route <plain request>
 aih run <plain request>
 ```
 
@@ -63,11 +86,17 @@ aih list
 aih show implementation
 aih show validation
 aih new-run task-name
+aih install-shell
+aih latest-run
+aih latest-run --json
+aih route "your request here" --json
 aih compile implementation runs/YYYY-MM-DD-task/task-brief.md --out runs/YYYY-MM-DD-task/prompt.md
 aih doctor
 aih doctor --json
 aih doctor --strict
 aih manifest --json
+aih validate
+aih validate --json
 aih release "candidate name"
 aih health
 ```
@@ -75,6 +104,8 @@ aih health
 The old template workflow still exists for cases where you want maximum control, but it is no longer the default path.
 
 Use `doctor --json` and `manifest --json` when another script or agent needs to verify the harness before relying on it.
+Use `validate --json` when you want one gate that combines doctor checks, self-tests, and command-surface verification.
+Use `latest-run --json` when you need to locate the newest saved prompt, execution plan, or final response path.
 Use `release` before treating the harness as a shipped product; it writes a production readiness packet under `runs/releases/` and fails if required diagnostics or self-tests fail.
 
 ## Examples

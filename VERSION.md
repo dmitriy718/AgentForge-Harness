@@ -1,6 +1,48 @@
 # Version
 
-Current version: `1.3.0-release-packets`
+Current version: `2.0.0-modular-foundation`
+
+## 2.0.0-modular-foundation
+
+- Restructured the monolithic `scripts/aih` (1,272 lines) into a modular `aih/` Python package with 11 focused modules: `cli`, `routing`, `prompts`, `audit`, `doctor`, `display`, `config`, `constants`, `release`, `health`, and `shell`.
+- Added `pyproject.toml` for pip-installable distribution with `aih` console entry point.
+- Added `python3 -m aih` invocation support.
+- Added `--dry-run` flag to `aih do` for previewing routing and prompt before execution.
+- Added configuration file support via `~/.config/ai-harness/config.toml` and per-project `.aih.toml`.
+- Added 74 unit tests across 5 test modules (`test_routing`, `test_prompts`, `test_audit`, `test_display`, `test_config`, `test_doctor`) for direct function-level testing.
+- Maintained full backward compatibility: `scripts/aih` wrapper and all 23 original integration tests pass unchanged.
+- Fixed timezone-naive `datetime.now()` in `compile` command (now uses UTC).
+- Total test suite: 97 tests passing in under 2 seconds.
+
+## 1.5.0-operator-safety-tools
+
+- Added `aih route` to preview mode, target, risk, and deep-execution detection without generating or executing a prompt.
+- Added `aih validate` to run doctor checks, self-tests, and manifest generation as one validation gate.
+- Added `aih latest-run` to locate the newest saved run record and key evidence paths.
+- Added prompt-only warnings for `aih prompt --out`, `aih prompt --save`, and record-only warnings for `aih run`.
+- Added color-aware human terminal summaries with `AIH_COLOR` and `NO_COLOR` controls while preserving plain JSON output.
+- Optimized route previews, latest-run lookup, duplicate-name checks, and deep-plan persistence to avoid unnecessary prompt builds, full sorts, quadratic scans, and repeated plan generation.
+- Added regression coverage for route previews, validation gates, latest-run lookup, and non-executing output modes.
+
+## 1.4.1-prompt-mode-hint
+
+- Added a prompt-only warning when `aih prompt` or `aih ask` generates Codex-routed work.
+- Added a deep-execution hint for prompt-only broad review/fix requests.
+- Kept generated prompt stdout clean for copying while sending execution hints to stderr.
+- Added regression coverage for prompt-only execution hints.
+
+## 1.4.0-deep-execution
+
+- Added deep request detection for broad review/fix prompts.
+- Added bounded multi-pass execution plans with review perspectives and three one-at-a-time improvements.
+- Saved `execution-plan.md` for deep runs and announced the plan before Codex starts.
+- Added regression coverage for deep request planning and execution visibility.
+
+## 1.3.1-shell-punctuation
+
+- Added `aih install-shell` to install zsh options that let unquoted punctuation survive in plain-language prompts.
+- Documented the zsh punctuation fix for parentheses, brackets, and question marks.
+- Added regression coverage for the shell installer and punctuation handling.
 
 ## 1.3.0-release-packets
 
