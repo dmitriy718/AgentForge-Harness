@@ -12,10 +12,26 @@ from .router_agent import RouterAgent
 
 __all__ = ["get_agent"]
 
+import sys
+if sys.version_info >= (3, 10):
+    from importlib.metadata import entry_points
+else:
+    from importlib_metadata import entry_points  # type: ignore[no-redef]
+
 # Registry mapping names to Agent classes
 _AGENT_REGISTRY: Dict[str, Type[Agent]] = {
     "router": RouterAgent,
 }
+
+# Discover third-party agents via entry points
+# Usage in pyproject.toml:
+# [project.entry-points."aih.agents"]
+# custom = "my_package.module:CustomAgent"
+for ep in entry_points(group="aih.agents"):
+    try:
+        _AGENT_REGISTRY[ep.name] = ep.load()
+    except Exception:
+        pass  # Silently skip failed imports for robust discovery
 
 
 def get_agent(name: str) -> Agent:

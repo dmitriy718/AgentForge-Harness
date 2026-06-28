@@ -23,6 +23,14 @@ aih doctor
 
 This runs a health check confirming all required files, directories, and dependencies are in place.
 
+### Autocomplete
+
+For Bash or Zsh, source the autocomplete script in your `~/.bashrc` or `~/.zshrc`:
+
+```bash
+source /path/to/AI-Harness/scripts/aih-completion.sh
+```
+
 ---
 
 ## Quick Start
