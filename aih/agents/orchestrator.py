@@ -197,15 +197,15 @@ class ContextCompressor:
 # ---------------------------------------------------------------------------
 # Tools and Agent Definitions
 # ---------------------------------------------------------------------------
+from aih.agents.tools import get_standard_tools
 
 @dataclass
 class SwarmAgent:
     """A specialized agent persona."""
     name: str
     system_prompt: str
-    tools: List[Callable[..., Any]] = field(default_factory=list)
+    tools: List[Callable[..., Any]] = field(default_factory=get_standard_tools)
     model: str = "gpt-4-turbo"
-
 
 class SwarmOrchestrator:
     """Multi-agent evaluation and execution loop with tool support."""
