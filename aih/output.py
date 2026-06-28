@@ -1,4 +1,4 @@
-"""Output models for AI‑Harness.
+"""Output models for AI-Harness.
 
 We use Pydantic for strict validation of routing results and other
 structured data emitted by the system.
@@ -17,11 +17,11 @@ class RoutingResult(BaseModel):
     request: str
         The original user request.
     mode: str
-        The selected AI‑Harness mode (implementation, debug, etc.).
+        The selected AI-Harness mode (implementation, debug, etc.).
     target: str
         The chosen execution target (codex, claude, generic).
     risk: str
-        Risk assessment – ``high``, ``medium`` or ``normal``.
+        Risk assessment -- ``high``, ``medium`` or ``normal``.
     deep_execution: bool
         Whether the request is considered a deep execution.
     """
@@ -34,8 +34,9 @@ class RoutingResult(BaseModel):
 
 
 def format_result(result: RoutingResult) -> str:
-    """Return a pretty‑printed JSON representation of ``result``.
+    """Return a pretty-printed JSON representation of ``result``.
 
-    ``result.json(indent=2)`` provides deterministic, human‑readable output.
+    Uses ``model_dump_json`` for Pydantic v2 compatibility.
     """
-    return result.json(indent=2)
+    return result.model_dump_json(indent=2)
+

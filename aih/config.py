@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from aih.constants import SEARCH_DIRS
+from typing import Any, cast
 
 # ---------------------------------------------------------------------------
 # ROOT resolution
@@ -63,23 +64,25 @@ class Config:
     color: str = "auto"
     deep_threshold: int = 500
     deep_min_terms: int = 2
+    router_model: str = "stub"
     harness_home: str = ""
     extra: dict[str, object] = field(default_factory=dict)
 
 
 def _parse_toml(path: Path) -> dict[str, object]:
-    """Parse a TOML file, using tomllib (3.11+) or a minimal fallback."""
+    """Parse a TOML file, using tomllib (3.11+) or a minimal fallback.
+
+    Returns a mapping of string keys to primitive objects.
+    """
     text = path.read_text()
     try:
         import tomllib  # noqa: PLC0415
-
-        return tomllib.loads(text)
+        return cast(dict[str, object], tomllib.loads(text))
     except ImportError:
         pass
     try:
         import tomli  # noqa: PLC0415
-
-        return tomli.loads(text)
+        return cast(dict[str, object], tomli.loads(text))
     except ImportError:
         pass
     # Minimal key=value fallback (flat TOML only)
@@ -118,8 +121,9 @@ def load_config(extra_paths: list[Path] | None = None) -> Config:
         default_mode=str(merged.get("mode", merged.get("default_mode", "auto"))),
         codex_bin=str(merged.get("codex_bin", "")),
         color=str(merged.get("color", "auto")),
-        deep_threshold=int(merged.get("deep_threshold", 500)),
-        deep_min_terms=int(merged.get("deep_min_terms", 2)),
+        deep_threshold=int(cast(str, merged.get("deep_threshold", 500))),
+        deep_min_terms=int(cast(str, merged.get("deep_min_terms", 2))),
+# duplicate deep_min_terms line removed
         harness_home=str(merged.get("harness_home", "")),
         extra={k: v for k, v in merged.items() if k not in {
             "target", "default_target", "mode", "default_mode",

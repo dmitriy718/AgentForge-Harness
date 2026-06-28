@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+from typing import Any, cast
 import os
 import shutil
 import subprocess
@@ -36,7 +37,7 @@ from aih.doctor import (
 from aih.health import write_health_snapshot
 from aih.prompts import build_prompt, deep_execution_block
 from aih.release import create_release
-from aih.routing import Overlay, classify_mode, choose_target, infer_risk, is_deep_request
+from aih.routing import Overlay, classify_mode, choose_target, infer_risk, is_deep_request, route_intelligently
 from aih.shell import install_shell_config
 
 
@@ -68,10 +69,21 @@ def read_request(args: argparse.Namespace) -> str:
 
 def build_overlay(args: argparse.Namespace) -> Overlay:
     request = read_request(args)
-    mode = classify_mode(request, args.mode)
-    target = choose_target(request, args.target, mode)
-    risk = infer_risk(request)
-    return Overlay(request=request, mode=mode, target=target, cwd=Path.cwd(), risk=risk)
+    # Use the new intelligent routing to obtain mode, target, risk, deep flag
+    result, target = route_intelligently(
+        request,
+        explicit_mode=args.mode if args.mode != "auto" else None,
+        explicit_target=args.target,
+    )
+    # Construct Overlay for backward‑compatible code paths
+    overlay = Overlay(
+        request=result.request,
+        mode=result.mode,
+        target=result.target,
+        cwd=Path.cwd(),
+        risk=result.risk,
+    )
+    return overlay
 
 
 def overlay_from_args(args: argparse.Namespace) -> tuple[Overlay, str]:
@@ -81,6 +93,8 @@ def overlay_from_args(args: argparse.Namespace) -> tuple[Overlay, str]:
 
 def route_payload(overlay: Overlay) -> dict[str, object]:
     mode_spec = MODES[overlay.mode]
+    # Deep execution flag is recomputed for consistency
+    deep = is_deep_request(overlay.request)
     return {
         "request": redact_request(overlay.request),
         "mode": overlay.mode,
@@ -364,14 +378,18 @@ def cmd_doctor(args: argparse.Namespace) -> None:
         print(json.dumps(payload, indent=2, sort_keys=True))
         raise SystemExit(1 if failed else 0)
 
+    # Cast for mypy clarity
+    payload_dict = cast(dict[str, Any], payload)
+    checks = cast(list[dict[str, Any]], payload_dict.get("checks", []))
+
     print_heading(f"AIH doctor {verdict_text(not failed)}")
-    print_item("Root", payload["root"])
-    print_item("Version", payload["version"])
-    print_item("Strict", payload["strict"])
+    print_item("Root", payload_dict["root"])
+    print_item("Version", payload_dict["version"])
+    print_item("Strict", payload_dict["strict"])
     print("")
-    for check in payload["checks"]:
-        st = status_text(str(check["status"]))
-        print(f"{st:4} {check['name']}: {check['detail']}")
+    for check in checks:
+        st = status_text(str(check.get("status")))
+        print(f"{st:4} {check.get('name')}: {check.get('detail')}")
     raise SystemExit(1 if failed else 0)
 
 
@@ -381,10 +399,11 @@ def cmd_manifest(args: argparse.Namespace) -> None:
         print(json.dumps(manifest, indent=2, sort_keys=True))
         return
 
-    print_heading(f"{manifest['name']} {manifest['version']}")
-    print_item("Root", manifest["root"])
-    print_item("Commands", ", ".join(manifest["commands"]))
-    print_item("Modes", ", ".join(manifest["modes"].keys()))
+    manifest_dict = cast(dict[str, Any], manifest)
+    print_heading(f"{manifest_dict['name']} {manifest_dict['version']}")
+    print_item("Root", manifest_dict["root"])
+    print_item("Commands", ", ".join(cast(list[str], manifest_dict.get("commands", []))))
+    print_item("Modes", ", ".join(cast(list[str], list(manifest_dict.get("modes", {}).keys()))))
 
 
 def cmd_validate(args: argparse.Namespace) -> None:
@@ -393,13 +412,14 @@ def cmd_validate(args: argparse.Namespace) -> None:
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))
     else:
-        print_heading(f"AIH validation {verdict_text(bool(payload['ok']))}")
-        print_item("Root", payload["root"])
-        print_item("Version", payload["version"])
-        print_item("Strict", payload["strict"])
-        print_item("Doctor", status_text("OK" if payload["doctor_ok"] else "FAIL"))
-        print_item("Self-tests", f"{status_text('OK' if payload['self_tests_ok'] else 'FAIL')} (exit {payload['self_tests_exit_code']})")
-        print_item("Commands", ", ".join(payload["manifest_commands"]))
+        payload_dict = cast(dict[str, Any], payload)
+        print_heading(f"AIH validation {verdict_text(bool(payload_dict['ok']))}")
+        print_item("Root", payload_dict["root"])
+        print_item("Version", payload_dict["version"])
+        print_item("Strict", payload_dict["strict"])
+        print_item("Doctor", status_text("OK" if payload_dict["doctor_ok"] else "FAIL"))
+        print_item("Self-tests", f"{status_text('OK' if payload_dict['self_tests_ok'] else 'FAIL')} (exit {payload_dict['self_tests_exit_code']})")
+        print_item("Commands", ", ".join(cast(list[str], payload_dict.get("manifest_commands", []))))
 
     raise SystemExit(1 if failed else 0)
 

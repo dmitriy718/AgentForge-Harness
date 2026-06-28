@@ -1,0 +1,37 @@
+Started: 2026-06-28T04:24:28-04:00
+
+## Docker before
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          26        13        49.32GB   3.58GB (7%)
+Containers      13        5         53.58MB   200.7kB (0%)
+Local Volumes   9         4         278MB     165.8MB (59%)
+Build Cache     0         0         0B        0B
+
+## Docker builder prune older than 7 days
+Total:	0B
+
+## Docker image prune older than 30 days
+Deleted Images:
+untagged: alpine:latest
+deleted: sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
+deleted: sha256:4d889c14e7d5a73929ab00be2ef8ff22437e7cbc545931e52554a7b00e123d8b
+deleted: sha256:452bfe804076a924cc3982dfe3a7d760a387d8332fa32b8f7050d763895f901f
+
+Total reclaimed space: 13.07MB
+
+## Stopped container prune older than 7 days
+Total reclaimed space: 0B
+
+## Package caches
+Vacuuming done, freed 0B of archived journals from /run/log/journal.
+Vacuuming done, freed 0B of archived journals from /var/log/journal/8776ca9aaf7045dda59a7df7da7b17c4.
+Vacuuming done, freed 0B of archived journals from /var/log/journal.
+
+## Docker after
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          25        13        49.31GB   3.567GB (7%)
+Containers      13        5         53.58MB   200.7kB (0%)
+Local Volumes   9         4         278MB     165.8MB (59%)
+Build Cache     0         0         0B        0B
+
+Finished: 2026-06-28T04:24:29-04:00
