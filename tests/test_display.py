@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import os
 import unittest
+from unittest import mock
 
 from aih.display import color, status_text, use_color, verdict_text
 
@@ -81,12 +82,17 @@ class StatusTextTests(unittest.TestCase):
         old = os.environ.get("AIH_COLOR")
         os.environ["AIH_COLOR"] = "never"
         try:
-            self.assertEqual(status_text("OK"), "OK")
+            self.assertEqual(status_text("OK"), "[  OK  ]")
         finally:
             if old is None:
                 os.environ.pop("AIH_COLOR", None)
             else:
                 os.environ["AIH_COLOR"] = old
+        with mock.patch("aih.display.use_color") as mock_use:
+            mock_use.return_value = False
+            self.assertEqual(status_text("OK"), "[  OK  ]")
+            self.assertEqual(status_text("WARN"), "[ WARN ]")
+            self.assertEqual(status_text("FAIL"), "[ FAIL ]")
 
     def test_unknown_status_passes_through(self) -> None:
         self.assertEqual(status_text("UNKNOWN"), "UNKNOWN")
