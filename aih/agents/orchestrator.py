@@ -60,7 +60,7 @@ class SwarmMemory:
 
     def get_history(self, session_id: str, limit: int = 50) -> List[Dict[str, str]]:
         cursor = self.conn.execute(
-            "SELECT role, content FROM conversation WHERE session_id = ? ORDER BY id ASC LIMIT ?",
+            "SELECT role, content FROM (SELECT * FROM conversation WHERE session_id = ? ORDER BY id DESC LIMIT ?) ORDER BY id ASC",
             (session_id, limit)
         )
         return [{"role": row["role"], "content": row["content"]} for row in cursor]
@@ -113,7 +113,7 @@ class SwarmVectorMemory(SwarmMemory):
             retry=retry_if_exception_type((httpx.HTTPStatusError, httpx.RequestError)),
             reraise=True
         )
-        def _fetch():
+        def _fetch() -> List[float]:
             with httpx.Client(timeout=15.0) as client:
                 resp = client.post(
                     f"{self.base_url}/embeddings",
@@ -121,7 +121,7 @@ class SwarmVectorMemory(SwarmMemory):
                     json={"input": text, "model": "text-embedding-3-small"}
                 )
                 resp.raise_for_status()
-                return resp.json()["data"][0]["embedding"]
+                return resp.json()["data"][0]["embedding"]  # type: ignore
         return _fetch()
         
     def add_knowledge(self, session_id: str, content: str) -> None:
@@ -278,7 +278,7 @@ class SwarmOrchestrator:
                 retry=retry_if_exception_type((httpx.HTTPStatusError, httpx.RequestError)),
                 reraise=True
             )
-            def _post_with_retry():
+            def _post_with_retry() -> httpx.Response:
                 response = self.client.post(f"{self.base_url}/chat/completions", json=payload, headers=headers)
                 response.raise_for_status()
                 return response

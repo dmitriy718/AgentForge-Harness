@@ -75,6 +75,7 @@ def intelligent_route(request: str) -> str:
         "response_format": {"type": "json_object"}
     }
     
+    from typing import Dict, Any
     from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
     @retry(
@@ -83,17 +84,17 @@ def intelligent_route(request: str) -> str:
         retry=retry_if_exception_type(Exception),
         reraise=True
     )
-    def _make_request():
+    def _make_request() -> Dict[str, Any]:
         with httpx.Client(timeout=10.0) as client:
             response = client.post(f"{base_url}/chat/completions", json=payload, headers=headers)
             response.raise_for_status()
-            return response.json()
+            return response.json()  # type: ignore
             
     try:
         result = _make_request()
         content = result["choices"][0]["message"]["content"]
         parsed = json.loads(content)
-        mode = parsed.get("mode", "")
+        mode = str(parsed.get("mode", ""))
         if mode in ("ask", "do", "deep", "prompt", "compile"):
             return mode
         return classify_mode(request)
