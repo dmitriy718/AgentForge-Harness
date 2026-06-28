@@ -1,4 +1,4 @@
-"""Dmitriy AI Harness — action wrapper for AI coding assistants."""
+"""Dmitriy AI Harness  --  action wrapper for AI coding assistants."""
 
 from __future__ import annotations
 

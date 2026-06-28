@@ -1,4 +1,4 @@
-"""Audit trail management — run records, redaction, metadata."""
+"""Audit trail management  --  run records, redaction, metadata."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Base class for autonomous agents used by AI‑Harness.
+"""Base class for autonomous agents used by AI-Harness.
 
 Agents implement a single `run` method that receives a request string and
 returns an arbitrary Python object (often a `RoutingResult` or similar).
@@ -13,7 +13,7 @@ from typing import Any
 class Agent(abc.ABC):
     """Abstract interface for all agents.
 
-    Sub‑classes must implement :meth:`run`.
+    Sub-classes must implement :meth:`run`.
     """
 
     @abc.abstractmethod

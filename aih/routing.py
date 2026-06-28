@@ -34,7 +34,7 @@ class Overlay:
     risk: str
 
 # ---------------------------------------------------------------------------
-# Legacy keyword‑based classification (kept for backward compatibility)
+# Legacy keyword-based classification (kept for backward compatibility)
 # ---------------------------------------------------------------------------
 
 def classify_mode(request: str, requested_mode: str = "auto") -> str:
@@ -106,7 +106,7 @@ def choose_target(request: str, target: str, mode: str) -> str:
     return "generic"
 
 # ---------------------------------------------------------------------------
-# Deep request detection – configurable thresholds
+# Deep request detection - configurable thresholds
 # ---------------------------------------------------------------------------
 
 def is_deep_request(
@@ -144,7 +144,7 @@ def route_intelligently(
     execution target (codex, claude, generic). ``RoutingResult`` contains the
     mode, risk, and deep-execution flag.
     """
-    # Determine mode – use explicit if supplied, otherwise intelligent router
+    # Determine mode - use explicit if supplied, otherwise intelligent router
     mode = explicit_mode if explicit_mode else intelligent_route(request)
     # Determine target
     target = choose_target(request, explicit_target, mode)
