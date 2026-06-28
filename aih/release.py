@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import subprocess
+from typing import Any, cast
 
 from aih import config as cfg
 from aih.audit import unique_dated_dir
@@ -13,7 +15,7 @@ from aih.prompts import build_prompt
 from aih.routing import Overlay
 
 
-def release_validation_markdown(name: str, strict: bool, doctor_ok: bool, tests) -> str:
+def release_validation_markdown(name: str, strict: bool, doctor_ok: bool, tests: subprocess.CompletedProcess[str]) -> str:
     gate_lines = "\n".join(f"- [x] {gate}" for gate in RELEASE_GATES)
     return "\n".join(
         [
