@@ -18,12 +18,13 @@ class WriteHealthSnapshotTests(unittest.TestCase):
             try:
                 from aih.health import write_health_snapshot
 
-                out = write_health_snapshot()
+                out, results = write_health_snapshot()
                 self.assertTrue(out.exists())
                 self.assertIn("health-", out.name)
                 content = out.read_text()
                 # Should contain at least one command header
                 self.assertIn("$ ", content)
+                self.assertIn("metrics", results)
             finally:
                 cfg.set_root(old_root)
 
@@ -34,7 +35,7 @@ class WriteHealthSnapshotTests(unittest.TestCase):
             try:
                 from aih.health import write_health_snapshot
 
-                out = write_health_snapshot()
+                out, _ = write_health_snapshot()
                 self.assertTrue(out.parent.exists())
                 self.assertEqual(out.parent.name, "system-health")
             finally:

@@ -44,20 +44,33 @@ def release_validation_markdown(name: str, strict: bool, doctor_ok: bool, tests:
     )
 
 
-def create_release(name: str, strict: bool = False) -> tuple[Path, bool]:
+def create_release(name: str, strict: bool = False, show_progress: bool = True) -> tuple[Path, bool]:
     release_root = cfg.ROOT / "runs" / "releases"
     release_dir = unique_dated_dir(release_root, name)
     release_dir.mkdir(parents=True, exist_ok=False)
 
-    doctor, doctor_failed = doctor_payload(strict=strict)
-    manifest = build_manifest()
-    tests = run_self_tests()
+    import sys
+    try:
+        from tqdm import tqdm
+    except ImportError:
+        tqdm = lambda x, **kwargs: x
 
-    (release_dir / "doctor.json").write_text(json.dumps(doctor, indent=2, sort_keys=True) + "\n")
-    (release_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
-    (release_dir / "self-test.log").write_text(tests.stdout + tests.stderr)
-    (release_dir / "validation.md").write_text(release_validation_markdown(name, strict, not doctor_failed, tests))
-    (release_dir / "known-limitations.md").write_text(
+    steps = ["doctor", "manifest", "tests", "write_files"]
+    iterator = tqdm(steps, desc="Building release packet", disable=not show_progress or not sys.stderr.isatty())
+
+    for step in iterator:
+        if step == "doctor":
+            doctor, doctor_failed = doctor_payload(strict=strict)
+        elif step == "manifest":
+            manifest = build_manifest()
+        elif step == "tests":
+            tests = run_self_tests()
+        elif step == "write_files":
+            (release_dir / "doctor.json").write_text(json.dumps(doctor, indent=2, sort_keys=True) + "\n")
+            (release_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+            (release_dir / "self-test.log").write_text(tests.stdout + tests.stderr)
+            (release_dir / "validation.md").write_text(release_validation_markdown(name, strict, not doctor_failed, tests))
+            (release_dir / "known-limitations.md").write_text(
         "\n".join(
             [
                 "# Known Limitations",

@@ -428,9 +428,12 @@ def cmd_release(args: argparse.Namespace) -> None:
         raise SystemExit(1)
 
 
-def cmd_health(_: argparse.Namespace) -> None:
-    out = write_health_snapshot()
-    print(out)
+def cmd_health(args: argparse.Namespace) -> None:
+    out, results = write_health_snapshot()
+    if getattr(args, "json", False):
+        print(json.dumps(results, indent=2, sort_keys=True))
+    else:
+        print(out)
 
 
 # ---------------------------------------------------------------------------
@@ -532,6 +535,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_release)
 
     p = sub.add_parser("health", help="Write a system health snapshot")
+    p.add_argument("--json", action="store_true", help="Emit machine-readable health metrics")
     p.set_defaults(func=cmd_health)
 
     return parser

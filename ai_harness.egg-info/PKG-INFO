@@ -21,6 +21,8 @@ Classifier: Topic :: Software Development :: Quality Assurance
 Classifier: Topic :: Software Development :: Testing
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
+Requires-Dist: pydantic>=2.0
+Requires-Dist: tqdm>=4.0
 Provides-Extra: toml
 Requires-Dist: tomli>=2.0; python_version < "3.11" and extra == "toml"
 

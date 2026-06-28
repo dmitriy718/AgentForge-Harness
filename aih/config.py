@@ -42,6 +42,7 @@ def set_root(path: Path) -> None:
     """Override ROOT at runtime (used by tests and config loading)."""
     global ROOT  # noqa: PLW0603
     ROOT = path
+    _load_config_cached.cache_clear()
 
 
 # ---------------------------------------------------------------------------
@@ -98,10 +99,15 @@ def _parse_toml(path: Path) -> dict[str, object]:
     return result
 
 
-def load_config(extra_paths: list[Path] | None = None) -> Config:
-    """Load configuration from disk with layered overrides."""
+import functools
+
+@functools.lru_cache
+def _load_config_cached(extra_paths: tuple[Path, ...] | None = None) -> Config:
+    """Load configuration from disk with layered overrides (cached)."""
     merged: dict[str, object] = {}
-    search = list(_CONFIG_SEARCH) + (extra_paths or [])
+    search = list(_CONFIG_SEARCH)
+    if extra_paths:
+        search.extend(extra_paths)
     for path in search:
         resolved = path.expanduser().resolve()
         if resolved.is_file():
@@ -137,6 +143,10 @@ def load_config(extra_paths: list[Path] | None = None) -> Config:
 
     return cfg
 
+
+def load_config(extra_paths: list[Path] | None = None) -> Config:
+    """Load configuration from disk with layered overrides."""
+    return _load_config_cached(tuple(extra_paths) if extra_paths else None)
 
 # ---------------------------------------------------------------------------
 # Shared utilities
