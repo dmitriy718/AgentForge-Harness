@@ -43,11 +43,16 @@ def intelligent_route(request: str) -> str:
         return classify_mode(request)
         
     import os
-    import json
-    import urllib.request
-    import urllib.error
     import sys
+    import json
+    import time
     from aih.display import color
+    
+    try:
+        import httpx
+    except ImportError:
+        print(color("Warning: httpx not installed. Falling back to heuristic routing.", "yellow", stream=sys.stderr), file=sys.stderr)
+        return classify_mode(request)
     
     api_key = os.environ.get("AIH_AGENT_API_KEY")
     if not api_key:
@@ -70,17 +75,35 @@ def intelligent_route(request: str) -> str:
         "response_format": {"type": "json_object"}
     }
     
-    try:
-        req = urllib.request.Request(f"{base_url}/chat/completions", data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=10.0) as response:
-            result = json.loads(response.read().decode("utf-8"))
-            content = result["choices"][0]["message"]["content"]
-            parsed = json.loads(content)
-            mode = parsed.get("mode", "")
-            if mode in ("ask", "do", "deep", "prompt", "compile"):
-                return mode
+    # Retry loop with exponential backoff
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            with httpx.Client(timeout=10.0) as client:
+                response = client.post(f"{base_url}/chat/completions", json=payload, headers=headers)
+                response.raise_for_status()
+                
+                result = response.json()
+                content = result["choices"][0]["message"]["content"]
+                parsed = json.loads(content)
+                mode = parsed.get("mode", "")
+                if mode in ("ask", "do", "deep", "prompt", "compile"):
+                    return mode
+                return classify_mode(request)
+                
+        except httpx.HTTPStatusError as e:
+            # Handle rate limits specifically
+            if e.response.status_code == 429 and attempt < max_retries - 1:
+                time.sleep(2 ** attempt)
+                continue
+            print(color(f"Warning: LLM routing HTTP error ({e}). Falling back.", "yellow", stream=sys.stderr), file=sys.stderr)
             return classify_mode(request)
-    except Exception as e:
-        print(color(f"Warning: LLM routing failed ({e}). Falling back to heuristic routing.", "yellow", stream=sys.stderr), file=sys.stderr)
-        return classify_mode(request)
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)
+                continue
+            print(color(f"Warning: LLM routing failed ({e}). Falling back.", "yellow", stream=sys.stderr), file=sys.stderr)
+            return classify_mode(request)
+            
+    return classify_mode(request)
 
