@@ -149,3 +149,29 @@ def test_swarm_orchestrator_run_agent_with_tool(memory_db):
         
     assert result == "tool done"
 
+
+def test_swarm_vector_memory(memory_db):
+    from aih.agents.orchestrator import SwarmVectorMemory
+    
+    with mock.patch.object(SwarmVectorMemory, "_get_embedding") as mock_embed:
+        # Mock embeddings to be simple vectors
+        # "python script" -> [1.0, 0.0]
+        # "bash script" -> [0.0, 1.0]
+        # query "python" -> [0.9, 0.1]
+        
+        def _mock_emb(text):
+            if "python" in text and "script" in text: return [1.0, 0.0]
+            if "bash" in text: return [0.0, 1.0]
+            return [0.9, 0.1] # query
+            
+        mock_embed.side_effect = _mock_emb
+        
+        v_memory = SwarmVectorMemory(api_key="test", db_path=Path(memory_db.conn.execute("PRAGMA database_list").fetchall()[0][2]))
+        v_memory.add_knowledge("sess_3", "This is a python script")
+        v_memory.add_knowledge("sess_3", "This is a bash script")
+        
+        results = v_memory.search_knowledge("sess_3", "query python", top_k=1)
+        
+        assert len(results) == 1
+        assert "python script" in results[0]
+

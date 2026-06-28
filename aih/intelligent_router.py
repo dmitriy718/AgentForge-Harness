@@ -75,35 +75,32 @@ def intelligent_route(request: str) -> str:
         "response_format": {"type": "json_object"}
     }
     
-    # Retry loop with exponential backoff
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            with httpx.Client(timeout=10.0) as client:
-                response = client.post(f"{base_url}/chat/completions", json=payload, headers=headers)
-                response.raise_for_status()
-                
-                result = response.json()
-                content = result["choices"][0]["message"]["content"]
-                parsed = json.loads(content)
-                mode = parsed.get("mode", "")
-                if mode in ("ask", "do", "deep", "prompt", "compile"):
-                    return mode
-                return classify_mode(request)
-                
-        except httpx.HTTPStatusError as e:
-            # Handle rate limits specifically
-            if e.response.status_code == 429 and attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
-                continue
-            print(color(f"Warning: LLM routing HTTP error ({e}). Falling back.", "yellow", stream=sys.stderr), file=sys.stderr)
-            return classify_mode(request)
-        except Exception as e:
-            if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
-                continue
-            print(color(f"Warning: LLM routing failed ({e}). Falling back.", "yellow", stream=sys.stderr), file=sys.stderr)
-            return classify_mode(request)
+    from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type(Exception),
+        reraise=True
+    )
+    def _make_request():
+        with httpx.Client(timeout=10.0) as client:
+            response = client.post(f"{base_url}/chat/completions", json=payload, headers=headers)
+            response.raise_for_status()
+            return response.json()
             
-    return classify_mode(request)
+    try:
+        result = _make_request()
+        content = result["choices"][0]["message"]["content"]
+        parsed = json.loads(content)
+        mode = parsed.get("mode", "")
+        if mode in ("ask", "do", "deep", "prompt", "compile"):
+            return mode
+        return classify_mode(request)
+    except httpx.HTTPStatusError as e:
+        print(color(f"Warning: LLM routing HTTP error ({e}). Falling back.", "yellow", stream=sys.stderr), file=sys.stderr)
+        return classify_mode(request)
+    except Exception as e:
+        print(color(f"Warning: LLM routing failed ({e}). Falling back.", "yellow", stream=sys.stderr), file=sys.stderr)
+        return classify_mode(request)
 
