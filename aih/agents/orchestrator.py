@@ -83,6 +83,76 @@ class SwarmMemory:
         self.conn.commit()
         return cursor.rowcount
 
+class SwarmVectorMemory(SwarmMemory):
+    """Semantic vector store extension for RAG-based code/knowledge retrieval."""
+    
+    def __init__(self, api_key: str, db_path: Path | None = None) -> None:
+        super().__init__(db_path)
+        self.api_key = api_key
+        self.base_url = "https://api.openai.com/v1"
+        self._init_vector_db()
+        
+    def _init_vector_db(self) -> None:
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS embeddings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT NOT NULL,
+                content TEXT NOT NULL,
+                vector JSON NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        self.conn.commit()
+        
+    def _get_embedding(self, text: str) -> List[float]:
+        from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+        
+        @retry(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=2, max=10),
+            retry=retry_if_exception_type((httpx.HTTPStatusError, httpx.RequestError)),
+            reraise=True
+        )
+        def _fetch():
+            with httpx.Client(timeout=15.0) as client:
+                resp = client.post(
+                    f"{self.base_url}/embeddings",
+                    headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
+                    json={"input": text, "model": "text-embedding-3-small"}
+                )
+                resp.raise_for_status()
+                return resp.json()["data"][0]["embedding"]
+        return _fetch()
+        
+    def add_knowledge(self, session_id: str, content: str) -> None:
+        vector = self._get_embedding(content)
+        self.conn.execute(
+            "INSERT INTO embeddings (session_id, content, vector) VALUES (?, ?, ?)",
+            (session_id, content, json.dumps(vector))
+        )
+        self.conn.commit()
+        
+    def search_knowledge(self, session_id: str, query: str, top_k: int = 3) -> List[str]:
+        query_vec = self._get_embedding(query)
+        
+        cursor = self.conn.execute("SELECT content, vector FROM embeddings WHERE session_id = ?", (session_id,))
+        results = []
+        
+        import math
+        def cosine_similarity(v1: List[float], v2: List[float]) -> float:
+            dot = sum(a * b for a, b in zip(v1, v2))
+            norm1 = math.sqrt(sum(a * a for a in v1))
+            norm2 = math.sqrt(sum(b * b for b in v2))
+            if norm1 == 0 or norm2 == 0: return 0.0
+            return dot / (norm1 * norm2)
+            
+        for row in cursor:
+            vec = json.loads(row["vector"])
+            sim = cosine_similarity(query_vec, vec)
+            results.append((sim, row["content"]))
+            
+        results.sort(key=lambda x: x[0], reverse=True)
+        return [content for sim, content in results[:top_k]]
 
 # ---------------------------------------------------------------------------
 # Context Compression
@@ -200,9 +270,21 @@ class SwarmOrchestrator:
                 "Content-Type": "application/json"
             }
             
-            try:
+            from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+            
+            @retry(
+                stop=stop_after_attempt(3),
+                wait=wait_exponential(multiplier=1, min=2, max=10),
+                retry=retry_if_exception_type((httpx.HTTPStatusError, httpx.RequestError)),
+                reraise=True
+            )
+            def _post_with_retry():
                 response = self.client.post(f"{self.base_url}/chat/completions", json=payload, headers=headers)
                 response.raise_for_status()
+                return response
+            
+            try:
+                response = _post_with_retry()
                 data = response.json()
                 choice = data["choices"][0]["message"]
                 
@@ -225,10 +307,6 @@ class SwarmOrchestrator:
                 return content
                 
             except httpx.HTTPStatusError as e:
-                # Self-correction on rate limit or temp error
-                if e.response.status_code == 429:
-                    time.sleep(2)
-                    continue
                 return f"Error: {e.response.text}"
             except Exception as e:
                 return f"Critical Error: {str(e)}"
