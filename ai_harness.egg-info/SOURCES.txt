@@ -27,6 +27,7 @@ aih/agents/base.py
 aih/agents/manager.py
 aih/agents/orchestrator.py
 aih/agents/router_agent.py
+aih/agents/tools.py
 tests/test_agents.py
 tests/test_aih.py
 tests/test_audit.py
@@ -45,3 +46,4 @@ tests/test_release.py
 tests/test_routing.py
 tests/test_security.py
 tests/test_shell.py
+tests/test_tools.py
