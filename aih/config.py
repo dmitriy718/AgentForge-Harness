@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from aih.constants import SEARCH_DIRS
-from typing import Any, cast
+from typing import cast
 
 # ---------------------------------------------------------------------------
 # ROOT resolution

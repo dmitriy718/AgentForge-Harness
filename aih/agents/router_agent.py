@@ -7,7 +7,6 @@ Uses the ``intelligent_route`` function to obtain a mode and then returns a
 from __future__ import annotations
 
 import os
-from typing import Any
 
 from aih.agents.base import Agent, AgentError
 from aih.intelligent_router import intelligent_route
