@@ -98,6 +98,7 @@ Output:
 - `--dry-run` — Preview what would happen without executing
 - `--strict` — Enable strict validation (for `doctor` and `validate`)
 - `--file <path>` — Read the request from a file instead of CLI arguments
+- `-v`, `--version` — Show the program's version number and exit
 
 ---
 
@@ -139,8 +140,8 @@ When your request is broad or complex (e.g., "comprehensive codebase review from
 3. Includes three improvement steps with validation after each
 
 Deep execution triggers when:
-- The request exceeds 500 characters, OR
-- The request contains ≥ 2 deep-request terms (e.g., "comprehensive", "senior developer", "all findings", "zero mistakes")
+- The request exceeds 500 characters (configurable via `deep_threshold`), OR
+- The request contains ≥ 2 deep-request terms (e.g., "comprehensive", "senior developer", "all findings", "zero mistakes") or terms defined in `custom_deep_terms` in your config file.
 
 ---
 
@@ -172,6 +173,9 @@ deep_threshold = 500
 # Minimum deep-request terms to trigger deep execution
 deep_min_terms = 2
 
+# Custom keywords to trigger deep execution
+custom_deep_terms = ["corporate standard", "zero defects"]
+
 # Router model (stub = keyword classifier, future: LLM model name)
 router_model = "stub"
 
@@ -187,7 +191,8 @@ harness_home = ""
 | `AIH_CODEX_BIN` | Path to the Codex CLI binary |
 | `AIH_COLOR` | Color mode (`always`, `never`, `auto`) |
 | `NO_COLOR` | Disable colors (standard convention) |
-| `AIH_AGENT_API_KEY` | API key for agent operations |
+| `AIH_AGENT_API_KEY` | API key for intelligent routing / agent operations |
+| `AIH_OPENAI_BASE_URL` | Base URL for the OpenAI-compatible REST API (defaults to `https://api.openai.com/v1`) |
 
 ---
 
