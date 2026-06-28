@@ -25,11 +25,12 @@ class IntelligentRouteTests(unittest.TestCase):
         result = intelligent_route("research the latest OpenAI API docs")
         self.assertEqual(result, "research")
 
-    def test_non_stub_model_raises(self) -> None:
+    def test_non_stub_model_falls_back(self) -> None:
         with mock.patch("aih.intelligent_router.load_config") as mock_cfg:
             mock_cfg.return_value = mock.MagicMock(router_model="gpt-4")
-            with self.assertRaises(NotImplementedError):
-                intelligent_route("fix the bug")
+            with mock.patch.dict("os.environ", {"AIH_AGENT_API_KEY": ""}):
+                result = intelligent_route("review this code")
+                self.assertEqual(result, "implementation")
 
 
 if __name__ == "__main__":

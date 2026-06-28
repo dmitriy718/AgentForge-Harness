@@ -35,11 +35,52 @@ def intelligent_route(request: str) -> str:
     """
     cfg = load_config()
     model = cfg.router_model
+    
+    # Lazy import to avoid circular dependency with routing module
+    from aih.routing import classify_mode  # noqa: PLC0415
+    
     if model == "stub":
-        # Lazy import to avoid circular dependency with routing module
-        from aih.routing import classify_mode  # noqa: PLC0415
-
         return classify_mode(request)
-    # Placeholder for future LLM integration
-    raise NotImplementedError("LLM routing not implemented yet")
+        
+    import os
+    import json
+    import urllib.request
+    import urllib.error
+    import sys
+    from aih.display import color
+    
+    api_key = os.environ.get("AIH_AGENT_API_KEY")
+    if not api_key:
+        print(color("Warning: AIH_AGENT_API_KEY not set. Falling back to heuristic routing.", "yellow", stream=sys.stderr), file=sys.stderr)
+        return classify_mode(request)
+        
+    base_url = os.environ.get("AIH_OPENAI_BASE_URL", "https://api.openai.com/v1")
+    
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "You are a routing agent. Respond with JSON matching the RouterResponse schema. Determine if the request requires 'ask' (question), 'do' (action), or 'deep' (comprehensive)."},
+            {"role": "user", "content": request}
+        ],
+        "response_format": {"type": "json_object"}
+    }
+    
+    try:
+        req = urllib.request.Request(f"{base_url}/chat/completions", data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10.0) as response:
+            result = json.loads(response.read().decode("utf-8"))
+            content = result["choices"][0]["message"]["content"]
+            parsed = json.loads(content)
+            mode = parsed.get("mode", "")
+            if mode in ("ask", "do", "deep", "prompt", "compile"):
+                return mode
+            return classify_mode(request)
+    except Exception as e:
+        print(color(f"Warning: LLM routing failed ({e}). Falling back to heuristic routing.", "yellow", stream=sys.stderr), file=sys.stderr)
+        return classify_mode(request)
 
