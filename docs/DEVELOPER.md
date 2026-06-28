@@ -40,17 +40,18 @@ Package root. Exports `__version__`.
 ### `aih/__main__.py`
 Entry point for `python -m aih`.
 
-### `aih/cli.py` (352 lines)
+### `aih/cli.py` (581 lines)
 The CLI entry point. Contains:
 - **Request parsing**: `read_request()` — reads from args, file, or stdin
 - **Overlay construction**: `build_overlay()` — routes the request and creates an `Overlay`
 - **Command handlers**: `cmd_do`, `cmd_ask`, `cmd_prompt`, `cmd_route`, `cmd_run`, `cmd_doctor`, `cmd_manifest`, `cmd_validate`, `cmd_release`, `cmd_health`, etc.
 - **Display helpers**: `print_completion_summary()`, `print_dry_run_preview()`
-- **Parser**: `build_parser()` — defines all subcommands and flags
+- **Parser**: `build_parser()` — defines all subcommands and flags (including `--version`)
+- **Error Handling**: Graceful interception of known validation errors in `main()` without stack traces
 
-### `aih/config.py` (180 lines)
+### `aih/config.py` (189 lines)
 Configuration management:
-- **`Config` dataclass**: All configuration fields with defaults
+- **`Config` dataclass**: All configuration fields with defaults (including `custom_deep_terms`)
 - **`_parse_toml()`**: TOML parser with fallback to manual key=value parsing
 - **`load_config()`**: Layered config loading from multiple sources
 - **`ROOT` resolution**: Auto-detects harness root from env, config, or package location
@@ -67,19 +68,19 @@ All shared constants:
 - `RELEASE_GATES`: Production release checklist items
 - `SHELL_*`: Shell configuration constants
 
-### `aih/routing.py` (170 lines)
+### `aih/routing.py` (176 lines)
 Request routing engine:
 - **`Overlay`** (frozen dataclass): Execution context container
 - **`classify_mode()`**: Legacy keyword-based mode classification
 - **`infer_risk()`**: Risk level detection (high/medium/normal)
 - **`choose_target()`**: Target selection (codex/claude/generic)
-- **`is_deep_request()`**: Deep execution detection with configurable thresholds
+- **`is_deep_request()`**: Deep execution detection evaluating text length, defaults, and user-configured `custom_deep_terms`
 - **`route_intelligently()`**: High-level routing returning `RoutingResult`
 
-### `aih/intelligent_router.py` (31 lines)
-LLM-based routing stub:
-- **`intelligent_route()`**: Checks config for `router_model`, falls back to `classify_mode()` when model is `"stub"`
-- Designed for future LLM API integration without changing callers
+### `aih/intelligent_router.py` (86 lines)
+LLM-based routing engine:
+- **`RouterResponse`** (Pydantic BaseModel): Contract enforcing structured mode/confidence/reasoning JSON from LLMs
+- **`intelligent_route()`**: Evaluates `router_model`. Uses `urllib` to make zero-dependency REST calls to OpenAI-compatible APIs when `AIH_AGENT_API_KEY` is present, gracefully falling back to heuristic classification on failure or when set to `"stub"`.
 
 ### `aih/output.py` (42 lines)
 Structured output models:
@@ -102,7 +103,7 @@ Audit trail management:
 - **`append_metadata()`, `read_metadata()`**: Key-value metadata I/O
 - **`final_message_summary()`**: Codex response summarization
 
-### `aih/doctor.py` (123 lines)
+### `aih/doctor.py` (121 lines)
 Health checking and validation:
 - **`Check`** (frozen dataclass): Individual check result with status/required/detail
 - **`doctor_checks()`**: Runs all health checks
@@ -111,20 +112,20 @@ Health checking and validation:
 - **`run_self_tests()`**: Executes test suite via subprocess
 - **`validation_payload()`**: Combined doctor + tests + manifest gate
 
-### `aih/security.py` (150 lines)
+### `aih/security.py` (154 lines)
 Security hardening:
 - **`sanitize_request()`**: Input validation (length, empty, shell injection)
 - **`validate_api_key()`**: API key structural validation
 - **`audit_log()`**: Structured JSON-L audit logging
 - **`_JsonFormatter`**: Custom log formatter for machine-readable output
 - **`RequestValidationError`**: Custom exception for validation failures
-- Shell injection patterns: backticks, `$()`, `${}`, pipe-to-destructive, raw device writes
+- Shell injection patterns: backticks, `$()`, `${}`, pipe-to-destructive, raw device writes, trailing `&` background processes, `&&`/`||` command chaining
 
-### `aih/display.py` (46 lines)
+### `aih/display.py` (48 lines)
 Terminal display utilities:
 - **`use_color()`**: Auto-detect color support
 - **`color()`**: ANSI colorizer with graceful degradation
-- **`status_text()`, `verdict_text()`**: Status-aware coloring
+- **`status_text()`, `verdict_text()`**: Status-aware coloring (including bracket padding like `[  OK  ]`)
 - **`print_heading()`, `print_item()`**: Formatted output helpers
 
 ### `aih/health.py` (37 lines)
