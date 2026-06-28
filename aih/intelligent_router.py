@@ -7,8 +7,6 @@ the body without affecting callers.
 
 from __future__ import annotations
 
-import os
-
 from aih.config import load_config
 
 

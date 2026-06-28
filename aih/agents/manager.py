@@ -1,4 +1,4 @@
-"""Agent manager – simple registry for AI‑Harness agents.
+"""Agent manager - simple registry for AI-Harness agents.
 
 Provides :func:`get_agent(name)` which returns an instantiated ``Agent``.
 """

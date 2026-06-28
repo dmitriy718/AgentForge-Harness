@@ -75,7 +75,7 @@ def build_overlay(args: argparse.Namespace) -> Overlay:
         explicit_mode=args.mode if args.mode != "auto" else None,
         explicit_target=args.target,
     )
-    # Construct Overlay for backward‑compatible code paths
+    # Construct Overlay for backward-compatible code paths
     overlay = Overlay(
         request=result.request,
         mode=result.mode,
