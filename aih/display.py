@@ -30,7 +30,10 @@ def color(text: object, *styles: str, stream: TextIO = sys.stdout) -> str:
 
 def status_text(status: str, stream: TextIO = sys.stdout) -> str:
     style = {"OK": "green", "WARN": "yellow", "FAIL": "red"}.get(status)
-    return color(status, style, "bold", stream=stream) if style else status
+    if style:
+        colored_status = color(status.center(6), style, "bold", stream=stream)
+        return f"[{colored_status}]"
+    return status
 
 
 def verdict_text(ok: bool, stream: TextIO = sys.stdout) -> str:

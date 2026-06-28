@@ -386,7 +386,7 @@ def cmd_doctor(args: argparse.Namespace) -> None:
     print("")
     for check in checks:
         st = status_text(str(check.get("status")))
-        print(f"{st:4} {check.get('name')}: {check.get('detail')}")
+        print(f"{st} {check.get('name')}: {check.get('detail')}")
     raise SystemExit(1 if failed else 0)
 
 
@@ -444,8 +444,16 @@ def cmd_health(args: argparse.Namespace) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="aih",
-        description="AI Harness action wrapper: execute plain requests through Codex or print stronger prompts for other LLMs.",
-        epilog='Shortcut: aih fix the login bug  ==  aih do "fix the login bug"',
+        description="AI-Harness (aih) — The autonomous AI developer execution environment.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=f"AI-Harness {cfg.read_version()}",
+        help="Show program's version number and exit",
     )
     sub = parser.add_subparsers(dest="command")
 
@@ -544,7 +552,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
 
-    subcommands = {"do", "ask", "prompt", "run", "latest-run", "route", "list", "show", "new-run", "install-shell", "compile", "doctor", "manifest", "validate", "release", "health", "-h", "--help"}
+    subcommands = {"do", "ask", "prompt", "run", "latest-run", "route", "list", "show", "new-run", "install-shell", "compile", "doctor", "manifest", "validate", "release", "health", "-h", "--help", "--version", "-v"}
     if argv and argv[0] not in subcommands:
         argv = ["do", *argv]
 
@@ -553,14 +561,21 @@ def main(argv: list[str] | None = None) -> int:
     if not hasattr(args, "func"):
         parser.print_help()
         return 0
-    args.func(args)
+        
+    try:
+        args.func(args)
+    except Exception as e:
+        # Avoid circular import, catch by class name or generic exceptions
+        if type(e).__name__ in ("RequestValidationError", "ConfigError", "ValueError"):
+            print(color(f"\n[ AIH Error ] {e}", "red", "bold", stream=sys.stderr), file=sys.stderr)
+            print(color("Tip: Run 'aih doctor' to diagnose environment issues or check your configuration.", "yellow", stream=sys.stderr), file=sys.stderr)
+            return 1
+        raise
     return 0
-
 
 def main_entry() -> None:
     """Entry point for pip-installed console_scripts."""
     raise SystemExit(main())
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

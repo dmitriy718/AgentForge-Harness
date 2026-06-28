@@ -118,8 +118,8 @@ def is_deep_request(
     When ``threshold`` or ``min_terms`` are not provided, values from the
     user configuration are used (falling back to 500 / 2).
     """
+    cfg = load_config()
     if threshold is None or min_terms is None:
-        cfg = load_config()
         if threshold is None:
             threshold = cfg.deep_threshold
         if min_terms is None:
@@ -128,7 +128,11 @@ def is_deep_request(
         return True
         
     text = request.lower()
-    term_hits = sum(1 for term in DEEP_REQUEST_TERMS if term in text)
+    
+    # Combine default terms with user-defined terms
+    all_terms = list(DEEP_REQUEST_TERMS) + [t.lower() for t in getattr(cfg, "custom_deep_terms", [])]
+    
+    term_hits = sum(1 for term in all_terms if term in text)
     return term_hits >= min_terms
 
 # ---------------------------------------------------------------------------

@@ -85,6 +85,8 @@ _SHELL_INJECTION_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\|\s*(rm|dd|mkfs)"),             # pipe to destructive commands
     re.compile(r">\s*/dev/sd"),                   # write to raw block devices
     re.compile(r">\s*/etc/"),                     # overwrite system config
+    re.compile(r"(&&|\|\|)\s*(rm|dd|mkfs|chmod)"),# chained destructive commands
+    re.compile(r"&\s*$"),                         # background execution
 )
 
 # Maximum allowed request length
