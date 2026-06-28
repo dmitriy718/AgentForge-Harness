@@ -32,6 +32,7 @@ tests/test_audit.py
 tests/test_cli.py
 tests/test_config.py
 tests/test_config2.py
+tests/test_coverage_gap.py
 tests/test_display.py
 tests/test_doctor.py
 tests/test_health.py

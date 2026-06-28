@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  ai-harness:
+    build: .
+    volumes:
+      - .:/app
+    environment:
+      - AIH_AGENT_API_KEY=${AIH_AGENT_API_KEY:-}
+      - AIH_OPENAI_BASE_URL=${AIH_OPENAI_BASE_URL:-https://api.openai.com/v1}
+    command: ["aih", "--help"]

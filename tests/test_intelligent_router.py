@@ -32,6 +32,44 @@ class IntelligentRouteTests(unittest.TestCase):
                 result = intelligent_route("review this code")
                 self.assertEqual(result, "implementation")
 
+    def test_non_stub_model_uses_httpx(self) -> None:
+        with mock.patch("aih.intelligent_router.load_config") as mock_cfg:
+            mock_cfg.return_value = mock.MagicMock(router_model="gpt-4")
+            with mock.patch.dict("os.environ", {"AIH_AGENT_API_KEY": "test_key"}):
+                mock_client_instance = mock.MagicMock()
+                mock_response = mock.MagicMock()
+                mock_response.json.return_value = {
+                    "choices": [{"message": {"content": '{"mode": "debug", "confidence": 0.99}'}}]
+                }
+                mock_client_instance.post.return_value = mock_response
+                
+                # Mock httpx.Client context manager
+                mock_client_class = mock.MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client_instance
+                
+                with mock.patch("httpx.Client", mock_client_class):
+                    result = intelligent_route("debug this issue")
+                    self.assertEqual(result, "debug")
+
+    def test_httpx_rate_limit_retry_fallback(self) -> None:
+        with mock.patch("aih.intelligent_router.load_config") as mock_cfg:
+            mock_cfg.return_value = mock.MagicMock(router_model="gpt-4")
+            with mock.patch.dict("os.environ", {"AIH_AGENT_API_KEY": "test_key"}):
+                mock_client_instance = mock.MagicMock()
+                
+                import httpx
+                mock_err = httpx.HTTPStatusError("429 Too Many Requests", request=mock.MagicMock(), response=mock.MagicMock())
+                mock_err.response.status_code = 429
+                
+                mock_client_instance.post.side_effect = mock_err
+                mock_client_class = mock.MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client_instance
+                
+                with mock.patch("httpx.Client", mock_client_class), mock.patch("time.sleep"):
+                    result = intelligent_route("review this code")
+                    # Should fallback after retries
+                    self.assertEqual(result, "implementation")
+
 
 if __name__ == "__main__":
     unittest.main()
