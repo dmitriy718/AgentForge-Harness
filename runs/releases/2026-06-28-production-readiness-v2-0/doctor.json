@@ -1,0 +1,205 @@
+{
+  "checks": [
+    {
+      "detail": "/home/dima/AI-Harness",
+      "name": "root exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "/home/dima/AI-Harness/scripts/aih",
+      "name": "aih executable",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "/home/linuxbrew/.linuxbrew/bin/python3",
+      "name": "system python",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "templates",
+      "name": "templates/ exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "playbooks",
+      "name": "playbooks/ exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "checklists",
+      "name": "checklists/ exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "swarm",
+      "name": "swarm/ exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "protocols",
+      "name": "protocols/ exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "rubrics",
+      "name": "rubrics/ exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "packs",
+      "name": "packs/ exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "runs",
+      "name": "runs/ exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "INDEX.md",
+      "name": "INDEX.md exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "HOW_TO_USE.md",
+      "name": "HOW_TO_USE.md exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "VERSION.md",
+      "name": "VERSION.md exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "scripts/aih",
+      "name": "scripts/aih exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "templates/00-universal-task-brief.md",
+      "name": "templates/00-universal-task-brief.md exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "templates/01-codex-implementation.md",
+      "name": "templates/01-codex-implementation.md exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "templates/03-debug-diagnostic.md",
+      "name": "templates/03-debug-diagnostic.md exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "templates/04-code-review.md",
+      "name": "templates/04-code-review.md exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "templates/07-agent-handoff.md",
+      "name": "templates/07-agent-handoff.md exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "protocols/production-readiness.md",
+      "name": "protocols/production-readiness.md exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "checklists/validation-gate.md",
+      "name": "checklists/validation-gate.md exists",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "26 markdown files",
+      "name": "harness files indexed",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "none",
+      "name": "no duplicate harness file names",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "/home/dima/.codex/skills/dmitriy-ai-harness/SKILL.md",
+      "name": "codex skill installed",
+      "ok": true,
+      "required": false,
+      "status": "OK"
+    },
+    {
+      "detail": "/home/dima/.nvm/versions/node/v24.14.1/bin/codex",
+      "name": "codex cli available",
+      "ok": true,
+      "required": true,
+      "status": "OK"
+    },
+    {
+      "detail": "/home/linuxbrew/.linuxbrew/bin/git",
+      "name": "git available",
+      "ok": true,
+      "required": false,
+      "status": "OK"
+    },
+    {
+      "detail": "runs/releases",
+      "name": "release records directory",
+      "ok": true,
+      "required": false,
+      "status": "OK"
+    }
+  ],
+  "generated_at": "2026-06-28T09:13:45+00:00",
+  "ok": true,
+  "root": "/home/dima/AI-Harness",
+  "strict": true,
+  "version": "2.0.0-modular-foundation"
+}
