@@ -31,13 +31,12 @@ from aih.display import (
 from aih.doctor import (
     build_manifest,
     doctor_payload,
-    run_self_tests,
     validation_payload,
 )
 from aih.health import write_health_snapshot
-from aih.prompts import build_prompt, deep_execution_block
+from aih.prompts import build_prompt
 from aih.release import create_release
-from aih.routing import Overlay, classify_mode, choose_target, infer_risk, is_deep_request, route_intelligently
+from aih.routing import Overlay, is_deep_request, route_intelligently
 from aih.shell import install_shell_config
 
 
@@ -93,8 +92,6 @@ def overlay_from_args(args: argparse.Namespace) -> tuple[Overlay, str]:
 
 def route_payload(overlay: Overlay) -> dict[str, object]:
     mode_spec = MODES[overlay.mode]
-    # Deep execution flag is recomputed for consistency
-    deep = is_deep_request(overlay.request)
     return {
         "request": redact_request(overlay.request),
         "mode": overlay.mode,
