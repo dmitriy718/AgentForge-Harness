@@ -29,13 +29,16 @@ aih/agents/router_agent.py
 tests/test_agents.py
 tests/test_aih.py
 tests/test_audit.py
+tests/test_cli.py
 tests/test_config.py
+tests/test_config2.py
 tests/test_display.py
 tests/test_doctor.py
 tests/test_health.py
 tests/test_intelligent_router.py
 tests/test_output.py
 tests/test_prompts.py
+tests/test_release.py
 tests/test_routing.py
 tests/test_security.py
 tests/test_shell.py
