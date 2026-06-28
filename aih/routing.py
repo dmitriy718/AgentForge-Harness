@@ -124,9 +124,12 @@ def is_deep_request(
             threshold = cfg.deep_threshold
         if min_terms is None:
             min_terms = cfg.deep_min_terms
+    if len(request) >= threshold:
+        return True
+        
     text = request.lower()
     term_hits = sum(1 for term in DEEP_REQUEST_TERMS if term in text)
-    return len(request) >= threshold or term_hits >= min_terms
+    return term_hits >= min_terms
 
 # ---------------------------------------------------------------------------
 # High-level routing that returns a validated ``RoutingResult``
